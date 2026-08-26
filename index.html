@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfilado de Aisladores</title>
+  <title>Perfilado de Cadenas de Aisladores</title>
   <style>
     :root {
       --primary: #0d6efd;
@@ -65,7 +65,6 @@
       box-sizing: border-box;
       font-size: 0.9rem;
     }
-    /* Matriz de mediciones */
     .table-responsive {
       overflow-x: auto;
       margin-top: 10px;
@@ -126,11 +125,11 @@
 <body>
 
 <div class="container">
-  <h2>Perfilado de Cadenas de Aisladores 1.1.2</h2>
+  <h2>Perfilado de Cadenas de Aisladores 1.1.4</h2>
   
   <form id="form-perfilado">
     
-    <!-- ENCABEZADO TÉCNICO -->
+    <!-- 1. DATOS DE CABECERA -->
     <div class="section-title">1. Datos de Cabecera</div>
     
     <div class="grid-2">
@@ -158,17 +157,6 @@
 
     <div class="grid-2">
       <div class="form-group">
-        <label for="tramo-de">Tramo Desde</label>
-        <input type="text" id="tramo-de" placeholder="Ej: ET Abasto">
-      </div>
-      <div class="form-group">
-        <label for="tramo-a">Tramo Hasta</label>
-        <input type="text" id="tramo-a" placeholder="Ej: ET Malvinas">
-      </div>
-    </div>
-
-    <div class="grid-2">
-      <div class="form-group">
         <label for="perfilador">Perfilador / Marca Equipo</label>
         <input type="text" id="perfilador" placeholder="Ej: TEREX" required>
       </div>
@@ -178,29 +166,12 @@
       </div>
     </div>
 
-    <div class="grid-2">
-      <div class="form-group">
-        <label for="humedad">Humedad (%)</label>
-        <input type="number" id="humedad" placeholder="%">
-      </div>
-      <div class="form-group">
-        <label for="temperatura">Temperatura (°C)</label>
-        <input type="number" id="temperatura" placeholder="°C">
-      </div>
+    <div class="form-group">
+      <label for="tipoApoyo">Tipo de Apoyo / Cadena</label>
+      <select id="tipoApoyo" required><option value="">Seleccione...</option></select>
     </div>
 
-    <div class="grid-2">
-      <div class="form-group">
-        <label for="aislador-marca">Aisladores Marca</label>
-        <input type="text" id="aislador-marca">
-      </div>
-      <div class="form-group">
-        <label for="tipoApoyo">Tipo de Apoyo / Cadena</label>
-        <select id="tipoApoyo" required><option value="">Seleccione...</option></select>
-      </div>
-    </div>
-
-    <!-- CONFIGURACIÓN DE GRILLA -->
+    <!-- 2. PLANILLA DE LECTURAS REGISTRADAS -->
     <div class="section-title">2. Planilla de Lecturas Registradas</div>
 
     <div class="grid-2">
@@ -217,37 +188,36 @@
     <div class="form-group">
       <label for="cant-aisladores">Cant. Aisladores por Cadena (1 al 12)</label>
       <select id="cant-aisladores">
-        <option value="6">6 Aisladores</option>
+        <option value="6" selected>6 Aisladores</option>
         <option value="7">7 Aisladores</option>
         <option value="8">8 Aisladores</option>
         <option value="9">9 Aisladores</option>
         <option value="10">10 Aisladores</option>
         <option value="11">11 Aisladores</option>
-        <option value="12" selected>12 Aisladores</option>
+        <option value="12">12 Aisladores</option>
       </select>
     </div>
 
-    <!-- MATRIZ DINÁMICA DE ENTRADA -->
+    <!-- MATRIZ DINÁMICA -->
     <div class="table-responsive">
       <table class="matrix">
         <thead>
-          <tr>
+          <tr id="tr-header-lados">
             <th rowspan="2">Ais. N°</th>
             <th colspan="3" id="th-lado-a">LADO A</th>
             <th colspan="3" id="th-lado-b">LADO B</th>
           </tr>
-          <tr>
-            <th>I</th><th>II</th><th>III</th>
-            <th>I</th><th>II</th><th>III</th>
+          <tr id="tr-subfases">
+            <!-- Renderizado dinámico según el Tipo de Apoyo seleccionado -->
           </tr>
         </thead>
         <tbody id="matrix-body">
-          <!-- Celdas generadas por JS -->
+          <!-- Renderizado dinámico de filas por JS -->
         </tbody>
       </table>
     </div>
 
-    <!-- ESTADOS Y OBSERVACIONES -->
+    <!-- 3. ESTADO GENERAL Y OBSERVACIONES -->
     <div class="section-title">3. Estado General y Observaciones</div>
 
     <div class="form-group">
@@ -273,36 +243,77 @@
 <script>
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZneJSFTp4FZOrGP4AlYOjgLqV_odof8KmiYscquPDo9GYzrRMVNpLTkz4KF3-YxLk/exec";
   let catalogosGuardados = null;
+  let esRetencion = false;
 
   document.addEventListener("DOMContentLoaded", () => {
-    generarMatriz(12);
+    actualizarEstructuraMatriz();
     cargarDatosDesdeCache();
     setupEvents();
   });
 
-  function generarMatriz(cant) {
+  function esTipoRetencion(texto) {
+    if (!texto) return false;
+    const txt = texto.toUpperCase();
+    return txt.includes("RET") || txt.includes("RETENCION") || txt.includes("DOBLE") || txt.includes("ANGULO");
+  }
+
+  function actualizarEstructuraMatriz() {
+    const cant = parseInt(document.getElementById("cant-aisladores").value) || 6;
+    const tipoSeleccionado = document.getElementById("tipoApoyo").value;
+    esRetencion = esTipoRetencion(tipoSeleccionado);
+
+    const thLadoA = document.getElementById("th-lado-a");
+    const thLadoB = document.getElementById("th-lado-b");
+    const trSubfases = document.getElementById("tr-subfases");
+
+    if (esRetencion) {
+      thLadoA.colSpan = 6;
+      thLadoB.colSpan = 6;
+      trSubfases.innerHTML = `
+        <th>I-Ext</th><th>I-Int</th>
+        <th>II-Ext</th><th>II-Int</th>
+        <th>III-Ext</th><th>III-Int</th>
+        <th>I-Ext</th><th>I-Int</th>
+        <th>II-Ext</th><th>II-Int</th>
+        <th>III-Ext</th><th>III-Int</th>
+      `;
+    } else {
+      thLadoA.colSpan = 3;
+      thLadoB.colSpan = 3;
+      trSubfases.innerHTML = `
+        <th>I</th><th>II</th><th>III</th>
+        <th>I</th><th>II</th><th>III</th>
+      `;
+    }
+
+    // Renderizar filas
     const tbody = document.getElementById("matrix-body");
     tbody.innerHTML = "";
-    // Generar desde cant hasta 1 (Numerados a partir del conductor)
+    const fasesLado = esRetencion 
+      ? ["I-Ext", "I-Int", "II-Ext", "II-Int", "III-Ext", "III-Int"]
+      : ["I", "II", "III"];
+
     for (let i = cant; i >= 1; i--) {
       const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><b>${i}</b></td>
-        <td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="A" data-fase="I"></td>
-        <td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="A" data-fase="II"></td>
-        <td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="A" data-fase="III"></td>
-        <td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="B" data-fase="I"></td>
-        <td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="B" data-fase="II"></td>
-        <td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="B" data-fase="III"></td>
-      `;
+      let html = `<td><b>${i}</b></td>`;
+
+      // Celdas Lado A
+      fasesLado.forEach(fase => {
+        html += `<td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="A" data-fase="${fase}"></td>`;
+      });
+      // Celdas Lado B
+      fasesLado.forEach(fase => {
+        html += `<td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="B" data-fase="${fase}"></td>`;
+      });
+
+      tr.innerHTML = html;
       tbody.appendChild(tr);
     }
   }
 
   function setupEvents() {
-    document.getElementById("cant-aisladores").addEventListener("change", (e) => {
-      generarMatriz(parseInt(e.target.value));
-    });
+    document.getElementById("cant-aisladores").addEventListener("change", actualizarEstructuraMatriz);
+    document.getElementById("tipoApoyo").addEventListener("change", actualizarEstructuraMatriz);
 
     document.getElementById("lado-a").addEventListener("input", (e) => {
       document.getElementById("th-lado-a").innerText = e.target.value.toUpperCase() || "LADO A";
@@ -322,7 +333,6 @@
     });
 
     document.getElementById("btn-force-sync").addEventListener("click", sincronizarCatalogos);
-
     document.getElementById("form-perfilado").addEventListener("submit", enviarFormulario);
   }
 
@@ -393,13 +403,8 @@
       division: document.getElementById("division").value,
       responsable: document.getElementById("responsable").value,
       linea: document.getElementById("linea").value,
-      tramoDe: document.getElementById("tramo-de").value,
-      tramoA: document.getElementById("tramo-a").value,
       perfilador: document.getElementById("perfilador").value,
       piquete: document.getElementById("piquete").value,
-      humedad: document.getElementById("humedad").value,
-      temperatura: document.getElementById("temperatura").value,
-      aisladorMarca: document.getElementById("aislador-marca").value,
       tipoApoyo: document.getElementById("tipoApoyo").value,
       obsTierra: document.getElementById("obs-tierra").value,
       obsAisladores: document.getElementById("obs-aisladores").value,
@@ -420,7 +425,7 @@
       if (res.status === "success") {
         alert("✅ Mediciones registradas correctamente.");
         document.getElementById("form-perfilado").reset();
-        generarMatriz(12);
+        actualizarEstructuraMatriz();
       } else {
         alert("Error: " + res.message);
       }
