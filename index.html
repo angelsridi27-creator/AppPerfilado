@@ -25,7 +25,7 @@
     }
     .container {
       width: 100%;
-      max-width: 500px;
+      max-width: 550px;
       background: var(--card-bg);
       padding: 20px;
       border-radius: 12px;
@@ -55,7 +55,7 @@
       box-sizing: border-box;
       font-size: 1rem;
     }
-    /* Estilos para Autocompletado de Líneas */
+    /* Autocompletado */
     .autocomplete-items {
       position: absolute;
       border: 1px solid var(--border);
@@ -79,17 +79,44 @@
     .autocomplete-items div:hover {
       background-color: #e9ecef;
     }
-    /* Seccion Mediciones */
-    .grid-mediciones {
-      background: #eef2f7;
-      padding: 15px;
+    /* Estilos para Acordeones y Grillas de Mediciones */
+    .fase-block {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
       border-radius: 8px;
-      margin-top: 15px;
+      margin-bottom: 12px;
+      overflow: hidden;
     }
-    .grid-title {
+    .fase-title {
+      background: #e2e8f0;
+      padding: 10px 15px;
       font-weight: bold;
-      margin-bottom: 10px;
-      color: #333;
+      color: #1e293b;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .fase-content {
+      padding: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .aislador-box {
+      display: flex;
+      flex-direction: column;
+    }
+    .aislador-box label {
+      font-size: 0.75rem;
+      margin-bottom: 2px;
+      color: #475569;
+      text-align: center;
+    }
+    .aislador-box input {
+      padding: 6px;
+      font-size: 0.9rem;
+      text-align: center;
     }
     .btn-submit {
       width: 100%;
@@ -120,6 +147,12 @@
   <h2>Perfilado de Aisladores</h2>
   <form id="form-perfilado">
     
+    <!-- Piquete -->
+    <div class="form-group">
+      <label for="piquete">N° de Piquete / Apoyo</label>
+      <input type="text" id="piquete" placeholder="Ej: Piquete 12" required>
+    </div>
+
     <!-- División -->
     <div class="form-group">
       <label for="division">División</label>
@@ -161,9 +194,9 @@
       <input type="text" id="perfilador" placeholder="Nombre/Código del perfilador" required>
     </div>
 
-    <!-- Mediciones dinámicas -->
-    <div id="seccion-mediciones" class="grid-mediciones" style="display: none;">
-      <div class="grid-title">Valores de Perfilado por Cadena</div>
+    <!-- Mediciones dinámicas por aislador -->
+    <div id="seccion-mediciones" style="display: none; margin-top: 20px;">
+      <label style="font-size: 1rem; margin-bottom: 10px;">Perfilado de Aisladores (hasta 12 por cadena/fase):</label>
       <div id="inputs-mediciones"></div>
     </div>
 
@@ -174,12 +207,11 @@
 </div>
 
 <script>
-  // Cambiar esta URL por el despliegue de tu Web App de Google Apps Script
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwZneJSFTp4FZOrGP4AlYOjgLqV_odof8KmiYscquPDo9GYzrRMVNpLTkz4KF3-YxLk/exec";
+  // Cambiar esta URL por tu Web App de Google Apps Script
+  const WEB_APP_URL = "https://script.google.com/macros/s/TU_SCRIPT_ID/exec";
 
   let datosMaestros = { lineas: [], responsables: {}, tiposApoyo: [] };
 
-  // Registrar Service Worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(err => console.log('SW error:', err));
   }
@@ -189,7 +221,6 @@
     setupEventListeners();
   });
 
-  // Cargar catalogos desde Apps Script o Cache Local
   async function cargarCatalogos() {
     mostrarEstado("Cargando catálogos...", "black");
     try {
@@ -201,13 +232,12 @@
         mostrarEstado("Catálogos cargados", "green");
       }
     } catch (e) {
-      console.warn("Sin conexión. Usando catálogos guardados localmente.");
       const local = localStorage.getItem("catalogos_perfilado");
       if (local) {
         datosMaestros = JSON.parse(local);
         mostrarEstado("Catálogos cargados (Modo Offline)", "orange");
       } else {
-        mostrarEstado("Error al cargar datos maetros sin conexión", "red");
+        mostrarEstado("Error al cargar catálogos offline", "red");
       }
     }
     poblarTiposApoyo();
@@ -222,7 +252,6 @@
   }
 
   function setupEventListeners() {
-    // Filtrar responsables por división
     document.getElementById("division").addEventListener("change", (e) => {
       const div = e.target.value;
       const selectResp = document.getElementById("responsable");
@@ -238,7 +267,6 @@
       }
     });
 
-    // Autocompletado de Líneas
     const lineaInput = document.getElementById("linea-input");
     const lineaList = document.getElementById("linea-list");
 
@@ -263,7 +291,7 @@
       if (e.target !== lineaInput) lineaList.innerHTML = '';
     });
 
-    // Generación dinámicas de inputs para mediciones
+    // Generar grilla de hasta 12 aisladores por fase
     document.getElementById("tipo-apoyo").addEventListener("change", (e) => {
       const val = e.target.value.toLowerCase();
       const contenedor = document.getElementById("inputs-mediciones");
@@ -275,23 +303,34 @@
         return;
       }
 
-      let campos = [];
+      let fases = [];
       if (val.includes("retencion") || val.includes("retención")) {
-        campos = [
+        fases = [
           "F1 Interna", "F1 Externa", 
           "F2 Interna", "F2 Externa", 
           "F3 Interna", "F3 Externa"
         ];
       } else {
-        // Por defecto para Suspensión u otros tipos
-        campos = ["F1", "F2", "F3"];
+        fases = ["F1", "F2", "F3"];
       }
 
-      campos.forEach(cadena => {
+      fases.forEach(fase => {
+        let inputsHtml = '';
+        for (let i = 1; i <= 12; i++) {
+          inputsHtml += `
+            <div class="aislador-box">
+              <label>N° ${i}</label>
+              <input type="number" step="any" class="input-medicion" data-fase="${fase}" data-num="${i}" placeholder="-">
+            </div>
+          `;
+        }
+
         contenedor.innerHTML += `
-          <div class="form-group" style="margin-bottom:8px;">
-            <label style="font-size:0.85rem;">${cadena}</label>
-            <input type="number" step="any" data-cadena="${cadena}" class="input-medicion" placeholder="Valor numérico" required>
+          <div class="fase-block">
+            <div class="fase-title">Fase / Cadena: ${fase}</div>
+            <div class="fase-content">
+              ${inputsHtml}
+            </div>
           </div>
         `;
       });
@@ -299,16 +338,28 @@
       seccion.style.display = "block";
     });
 
-    // Envío del formulario
+    // Envío del Formulario
     document.getElementById("form-perfilado").addEventListener("submit", async (e) => {
       e.preventDefault();
       
-      const mediciones = {};
+      const mediciones = [];
       document.querySelectorAll(".input-medicion").forEach(inp => {
-        mediciones[inp.dataset.cadena] = inp.value;
+        if (inp.value !== "" && inp.value !== null) {
+          mediciones.push({
+            fase: inp.dataset.fase,
+            aisladorNum: inp.dataset.num,
+            valor: inp.value
+          });
+        }
       });
 
+      if (mediciones.length === 0) {
+        mostrarEstado("Debe ingresar al menos el valor de un aislador.", "red");
+        return;
+      }
+
       const payload = {
+        piquete: document.getElementById("piquete").value,
         division: document.getElementById("division").value,
         responsable: document.getElementById("responsable").value,
         linea: document.getElementById("linea-input").value,
@@ -332,15 +383,14 @@
       });
       const res = await resp.json();
       if (res.status === "success") {
-        mostrarEstado("¡Datos registrados correctamente!", "green");
+        mostrarEstado("¡Perfilado registrado correctamente!", "green");
         resetFormulario();
       } else {
         mostrarEstado("Error: " + res.message, "red");
       }
     } catch (err) {
-      console.warn("Sin red. Guardando localmente.");
       guardarPendienteOffline(payload);
-      mostrarEstado("Guardado localmente (se enviará al reconectar)", "orange");
+      mostrarEstado("Guardado localmente (sin conexión)", "orange");
       resetFormulario();
     } finally {
       document.getElementById("btn-enviar").disabled = false;
@@ -359,7 +409,6 @@
     localStorage.setItem("perfilados_pendientes", JSON.stringify(pendientes));
   }
 
-  // Sincronizar pendientes cuando regrese la conexión
   window.addEventListener("online", async () => {
     const pendientes = JSON.parse(localStorage.getItem("perfilados_pendientes") || "[]");
     if (pendientes.length === 0) return;
@@ -377,7 +426,7 @@
 
     localStorage.setItem("perfilados_pendientes", JSON.stringify(noEnviados));
     if (noEnviados.length === 0) {
-      mostrarEstado("Sincronización pendiente completada", "green");
+      mostrarEstado("Sincronización finalizada con éxito", "green");
     }
   });
 
