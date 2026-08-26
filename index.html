@@ -6,379 +6,431 @@
   <title>Perfilado de Aisladores</title>
   <style>
     :root {
-      --primary: #0d6efd; /* Color azul del título y botones principales */
-      --background: #f8f9fa;
-      --surface: #ffffff;
+      --primary: #0d6efd;
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
       --text: #212529;
       --border: #ced4da;
     }
-
     body {
       font-family: system-ui, -apple-system, sans-serif;
-      background-color: var(--background);
+      background-color: var(--bg);
       color: var(--text);
       margin: 0;
-      padding: 15px;
+      padding: 12px;
       display: flex;
       justify-content: center;
     }
-
     .container {
-      background-color: var(--surface);
       width: 100%;
-      max-width: 500px;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      max-width: 650px;
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
     }
-
     h2 {
+      margin-top: 0;
       color: var(--primary);
       text-align: center;
-      margin-top: 0;
-      margin-bottom: 20px;
-      font-size: 1.4rem;
+      font-size: 1.3rem;
     }
-
+    .section-title {
+      font-weight: bold;
+      color: #495057;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 4px;
+      margin: 15px 0 10px 0;
+      font-size: 0.95rem;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 12px;
     }
-
     label {
       display: block;
-      margin-bottom: 5px;
-      font-weight: 500;
+      margin-bottom: 4px;
+      font-weight: 600;
+      font-size: 0.82rem;
+    }
+    select, input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      box-sizing: border-box;
       font-size: 0.9rem;
     }
-
-    select, input[type="text"], input[type="number"] {
+    /* Matriz de mediciones */
+    .table-responsive {
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+    table.matrix {
       width: 100%;
-      padding: 10px;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+    }
+    table.matrix th, table.matrix td {
       border: 1px solid var(--border);
-      border-radius: 4px;
-      box-sizing: border-box;
-      font-size: 1rem;
+      padding: 4px;
+      text-align: center;
     }
-
-    .card {
-      background-color: #f1f3f5;
-      padding: 15px;
-      border-radius: 6px;
-      margin-bottom: 20px;
+    table.matrix th {
+      background-color: #e9ecef;
+      font-size: 0.75rem;
     }
-
-    .btn-primary {
+    table.matrix input {
+      width: 100%;
+      padding: 4px;
+      text-align: center;
+      font-size: 0.85rem;
+      border: none;
+    }
+    .btn-submit {
+      width: 100%;
       background-color: var(--primary);
       color: white;
       border: none;
       padding: 12px;
-      width: 100%;
       border-radius: 6px;
       font-size: 1rem;
       font-weight: bold;
       cursor: pointer;
-      transition: background-color 0.2s;
+      margin-top: 15px;
     }
-
-    .btn-primary:active {
-      background-color: #0b5ed7;
-    }
-
-    /* Estilos del nuevo botón de sincronización */
     .btn-sync {
       background-color: #6c757d;
       color: white;
       border: none;
-      padding: 10px;
+      padding: 8px;
       width: 100%;
-      border-radius: 6px;
-      font-size: 0.9rem;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 15px;
-      transition: background-color 0.2s;
-    }
-
-    .btn-sync:active {
-      background-color: #5c636a;
-    }
-
-    .status-message {
-      text-align: center;
-      margin-top: 10px;
+      border-radius: 5px;
       font-size: 0.85rem;
       font-weight: bold;
-      min-height: 20px;
+      cursor: pointer;
+      margin-top: 10px;
     }
-
-    .status-success { color: #198754; }
-    .status-error { color: #dc3545; }
-    .status-warning { color: #ffc107; }
+    .status-message {
+      text-align: center;
+      margin-top: 8px;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <!-- Título actualizado -->
-    <h2>Perfilado de Aisladores 1.1.1</h2>
+<div class="container">
+  <h2>Perfilado de Cadenas de Aisladores 1.1.2</h2>
+  
+  <form id="form-perfilado">
     
-    <form id="form-perfilado">
-      
-      <!-- 1. División -->
+    <!-- ENCABEZADO TÉCNICO -->
+    <div class="section-title">1. Datos de Cabecera</div>
+    
+    <div class="grid-2">
       <div class="form-group">
         <label for="division">División</label>
         <select id="division" required>
-          <option value="">Seleccione División...</option>
+          <option value="">Seleccione...</option>
           <option value="Cordoba">Córdoba</option>
           <option value="Reolin">Reolin</option>
           <option value="Isla Verde">Isla Verde</option>
           <option value="Levalle">Levalle</option>
         </select>
       </div>
-
-      <!-- 2. Responsable -->
       <div class="form-group">
-        <label for="responsable">Responsable</label>
-        <select id="responsable" required>
-          <option value="">Seleccione primero la División...</option>
-        </select>
+        <label for="responsable">Jefe de Trabajo / Resp.</label>
+        <select id="responsable" required><option value="">Seleccione División...</option></select>
       </div>
+    </div>
 
-      <!-- 3. Línea -->
+    <div class="form-group">
+      <label for="linea">Línea</label>
+      <input type="text" id="linea" list="lista-lineas" placeholder="Buscar línea..." required autocomplete="off">
+      <datalist id="lista-lineas"></datalist>
+    </div>
+
+    <div class="grid-2">
       <div class="form-group">
-        <label for="linea">Línea</label>
-        <input type="text" id="linea" list="lista-lineas" placeholder="Escriba para buscar línea..." required autocomplete="off">
-        <datalist id="lista-lineas"></datalist>
+        <label for="tramo-de">Tramo Desde</label>
+        <input type="text" id="tramo-de" placeholder="Ej: ET Abasto">
       </div>
-
-      <!-- 4. Perfilador -->
       <div class="form-group">
-        <label for="perfilador">Perfilador</label>
-        <input type="text" id="perfilador" placeholder="Nombre/Código del perfilador" required>
+        <label for="tramo-a">Tramo Hasta</label>
+        <input type="text" id="tramo-a" placeholder="Ej: ET Malvinas">
       </div>
+    </div>
 
-      <!-- 5. Piquete -->
+    <div class="grid-2">
       <div class="form-group">
-        <label for="piquete">Piquete</label>
-        <input type="text" id="piquete" placeholder="Número de piquete" required>
+        <label for="perfilador">Perfilador / Marca Equipo</label>
+        <input type="text" id="perfilador" placeholder="Ej: TEREX" required>
       </div>
-
-      <!-- 6. Tipo de Apoyo -->
       <div class="form-group">
-        <label for="tipoApoyo">Tipo de Apoyo</label>
-        <select id="tipoApoyo" required>
-          <option value="">Seleccione Tipo de Apoyo...</option>
-        </select>
+        <label for="piquete">Piquete / Apoyo N°</label>
+        <input type="text" id="piquete" placeholder="Ej: 19" required>
       </div>
+    </div>
 
-      <!-- Valores de Perfilado (como en tu diseño original) -->
-      <div class="card">
-        <label style="margin-bottom: 10px; font-size: 1rem;">Valores de Perfilado por Cadena</label>
-        
-        <div class="form-group">
-          <label style="font-size: 0.8rem; color: #555;">F1</label>
-          <input type="number" id="valorF1" placeholder="Valor numérico" step="0.01">
-        </div>
-        <div class="form-group">
-          <label style="font-size: 0.8rem; color: #555;">F2</label>
-          <input type="number" id="valorF2" placeholder="Valor numérico" step="0.01">
-        </div>
-        <div class="form-group" style="margin-bottom: 0;">
-          <label style="font-size: 0.8rem; color: #555;">F3</label>
-          <input type="number" id="valorF3" placeholder="Valor numérico" step="0.01">
-        </div>
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="humedad">Humedad (%)</label>
+        <input type="number" id="humedad" placeholder="%">
       </div>
+      <div class="form-group">
+        <label for="temperatura">Temperatura (°C)</label>
+        <input type="number" id="temperatura" placeholder="°C">
+      </div>
+    </div>
 
-      <button type="submit" class="btn-primary" id="btn-guardar">Guardar y Sincronizar</button>
-    </form>
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="aislador-marca">Aisladores Marca</label>
+        <input type="text" id="aislador-marca">
+      </div>
+      <div class="form-group">
+        <label for="tipoApoyo">Tipo de Apoyo / Cadena</label>
+        <select id="tipoApoyo" required><option value="">Seleccione...</option></select>
+      </div>
+    </div>
 
-    <!-- Botón Forzar Sincronización agregado al final -->
-    <button type="button" id="btn-force-sync" class="btn-sync">🔄 Forzar Sincronización de Catálogos</button>
-    <div id="sync-status" class="status-message">Verificando catálogos...</div>
-  </div>
+    <!-- CONFIGURACIÓN DE GRILLA -->
+    <div class="section-title">2. Planilla de Lecturas Registradas</div>
 
-  <script>
-    // ==========================================
-    // ¡IMPORTANTE! COLOCA TU URL DE APPS SCRIPT AQUÍ
-    // ==========================================
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZneJSFTp4FZOrGP4AlYOjgLqV_odof8KmiYscquPDo9GYzrRMVNpLTkz4KF3-YxLk/exec";
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="lado-a">Nombre Lado A (Estructura)</label>
+        <input type="text" id="lado-a" placeholder="Ej: Totoral" value="LADO A">
+      </div>
+      <div class="form-group">
+        <label for="lado-b">Nombre Lado B (Estructura)</label>
+        <input type="text" id="lado-b" placeholder="Ej: La Dormida" value="LADO B">
+      </div>
+    </div>
 
-    let catalogosGuardados = null;
+    <div class="form-group">
+      <label for="cant-aisladores">Cant. Aisladores por Cadena (1 al 12)</label>
+      <select id="cant-aisladores">
+        <option value="6">6 Aisladores</option>
+        <option value="7">7 Aisladores</option>
+        <option value="8">8 Aisladores</option>
+        <option value="9">9 Aisladores</option>
+        <option value="10">10 Aisladores</option>
+        <option value="11">11 Aisladores</option>
+        <option value="12" selected>12 Aisladores</option>
+      </select>
+    </div>
 
-    // Elementos del DOM
-    const selDivision = document.getElementById("division");
-    const selResponsable = document.getElementById("responsable");
-    const listLineas = document.getElementById("lista-lineas");
-    const selTipoApoyo = document.getElementById("tipoApoyo");
-    const statusDiv = document.getElementById("sync-status");
-    const btnSync = document.getElementById("btn-force-sync");
-    const btnGuardar = document.getElementById("btn-guardar");
+    <!-- MATRIZ DINÁMICA DE ENTRADA -->
+    <div class="table-responsive">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th rowspan="2">Ais. N°</th>
+            <th colspan="3" id="th-lado-a">LADO A</th>
+            <th colspan="3" id="th-lado-b">LADO B</th>
+          </tr>
+          <tr>
+            <th>I</th><th>II</th><th>III</th>
+            <th>I</th><th>II</th><th>III</th>
+          </tr>
+        </thead>
+        <tbody id="matrix-body">
+          <!-- Celdas generadas por JS -->
+        </tbody>
+      </table>
+    </div>
 
-    // Inicializar al cargar la página
-    document.addEventListener("DOMContentLoaded", () => {
-      cargarDatosDesdeCache();
+    <!-- ESTADOS Y OBSERVACIONES -->
+    <div class="section-title">3. Estado General y Observaciones</div>
+
+    <div class="form-group">
+      <label for="obs-tierra">Estado Tomas de Tierra</label>
+      <input type="text" id="obs-tierra" placeholder="Normal / Regular / Dañado">
+    </div>
+    <div class="form-group">
+      <label for="obs-aisladores">Estado de los Aisladores</label>
+      <input type="text" id="obs-aisladores" placeholder="Observaciones físicas del plato/cadena">
+    </div>
+    <div class="form-group">
+      <label for="observaciones">Observaciones Generales</label>
+      <input type="text" id="observaciones" placeholder="Detalles adicionales">
+    </div>
+
+    <button type="submit" class="btn-submit" id="btn-guardar">Guardar y Sincronizar</button>
+  </form>
+
+  <button type="button" id="btn-force-sync" class="btn-sync">🔄 Forzar Sincronización de Catálogos</button>
+  <div id="sync-status" class="status-message"></div>
+</div>
+
+<script>
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZneJSFTp4FZOrGP4AlYOjgLqV_odof8KmiYscquPDo9GYzrRMVNpLTkz4KF3-YxLk/exec";
+  let catalogosGuardados = null;
+
+  document.addEventListener("DOMContentLoaded", () => {
+    generarMatriz(12);
+    cargarDatosDesdeCache();
+    setupEvents();
+  });
+
+  function generarMatriz(cant) {
+    const tbody = document.getElementById("matrix-body");
+    tbody.innerHTML = "";
+    // Generar desde cant hasta 1 (Numerados a partir del conductor)
+    for (let i = cant; i >= 1; i--) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><b>${i}</b></td>
+        <td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="A" data-fase="I"></td>
+        <td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="A" data-fase="II"></td>
+        <td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="A" data-fase="III"></td>
+        <td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="B" data-fase="I"></td>
+        <td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="B" data-fase="II"></td>
+        <td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="B" data-fase="III"></td>
+      `;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function setupEvents() {
+    document.getElementById("cant-aisladores").addEventListener("change", (e) => {
+      generarMatriz(parseInt(e.target.value));
     });
 
-    // 1. CARGAR DATOS EN EL FORMULARIO
-    function cargarDatosDesdeCache() {
-      const dataStr = localStorage.getItem("catalogos_pwa");
-      if (dataStr) {
-        catalogosGuardados = JSON.parse(dataStr);
-        poblarFormulario(catalogosGuardados);
-        mostrarEstado("✅ Catálogos offline listos.", "status-success");
-      } else {
-        mostrarEstado("⚠️ No hay catálogos. Requiere sincronizar.", "status-error");
-      }
-    }
-
-    function poblarFormulario(data) {
-      // Poblar datalist de Líneas
-      listLineas.innerHTML = "";
-      data.lineas.forEach(linea => {
-        let option = document.createElement("option");
-        option.value = linea;
-        listLineas.appendChild(option);
-      });
-
-      // Poblar Select Tipo Apoyo
-      selTipoApoyo.innerHTML = '<option value="">Seleccione Tipo de Apoyo...</option>';
-      data.tiposApoyo.forEach(tipo => {
-        let option = document.createElement("option");
-        option.value = tipo;
-        option.innerText = tipo;
-        selTipoApoyo.appendChild(option);
-      });
-    }
-
-    // 2. LÓGICA DE CASCADA (División -> Responsable)
-    selDivision.addEventListener("change", function() {
-      const divisionElegida = this.value;
-      selResponsable.innerHTML = '<option value="">Seleccione Responsable...</option>';
-      
-      if (!divisionElegida || !catalogosGuardados) return;
-
-      // Obtener responsables según división (Ej: "Cordoba", "Reolin")
-      const responsables = catalogosGuardados.responsables[divisionElegida] || [];
-      responsables.forEach(resp => {
-        let option = document.createElement("option");
-        option.value = resp;
-        option.innerText = resp;
-        selResponsable.appendChild(option);
-      });
+    document.getElementById("lado-a").addEventListener("input", (e) => {
+      document.getElementById("th-lado-a").innerText = e.target.value.toUpperCase() || "LADO A";
+    });
+    document.getElementById("lado-b").addEventListener("input", (e) => {
+      document.getElementById("th-lado-b").innerText = e.target.value.toUpperCase() || "LADO B";
     });
 
-    // 3. FORZAR SINCRONIZACIÓN MANUAL (Nuevo Botón)
-    btnSync.addEventListener("click", function() {
-      if (!navigator.onLine) {
-        alert("Necesitas conexión a internet para sincronizar.");
-        return;
-      }
-
-      btnSync.disabled = true;
-      btnSync.innerText = "⏳ Sincronizando...";
-      mostrarEstado("Conectando con la planilla...", "");
-
-      // Evitar caché agregando un timestamp a la URL
-      fetch(`${SCRIPT_URL}?nocache=${new Date().getTime()}`)
-        .then(response => {
-          if (!response.ok) throw new Error("Error de red");
-          return response.json();
-        })
-        .then(result => {
-          if (result.status === "success") {
-            // Guardar en la memoria del navegador
-            localStorage.setItem("catalogos_pwa", JSON.stringify(result.data));
-            catalogosGuardados = result.data;
-            poblarFormulario(catalogosGuardados);
-            
-            // Refrescar responsables si hay una división seleccionada
-            selDivision.dispatchEvent(new Event('change'));
-            
-            mostrarEstado("✅ Catálogos actualizados y guardados.", "status-success");
-          } else {
-            throw new Error(result.message || "Respuesta incorrecta");
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          mostrarEstado("❌ Error al sincronizar.", "status-error");
-        })
-        .finally(() => {
-          btnSync.disabled = false;
-          btnSync.innerText = "🔄 Forzar Sincronización de Catálogos";
+    document.getElementById("division").addEventListener("change", function() {
+      const respSelect = document.getElementById("responsable");
+      respSelect.innerHTML = '<option value="">Seleccione...</option>';
+      if (this.value && catalogosGuardados && catalogosGuardados.responsables[this.value]) {
+        catalogosGuardados.responsables[this.value].forEach(r => {
+          respSelect.innerHTML += `<option value="${r}">${r}</option>`;
         });
+      }
     });
 
-    // 4. GUARDAR Y ENVIAR DATOS (POST)
-    document.getElementById("form-perfilado").addEventListener("submit", function(e) {
-      e.preventDefault();
+    document.getElementById("btn-force-sync").addEventListener("click", sincronizarCatalogos);
 
-      if (!navigator.onLine) {
-        alert("Estás sin conexión. Por favor, conéctate a internet para enviar los datos.");
-        // Nota: Si quieres guardar localmente y enviar luego, requeriría lógica extra (IndexedDB)
-        return;
-      }
+    document.getElementById("form-perfilado").addEventListener("submit", enviarFormulario);
+  }
 
-      // Preparar el array de mediciones
-      let mediciones = [];
-      const valF1 = document.getElementById("valorF1").value;
-      const valF2 = document.getElementById("valorF2").value;
-      const valF3 = document.getElementById("valorF3").value;
+  function cargarDatosDesdeCache() {
+    const local = localStorage.getItem("catalogos_pwa");
+    if (local) {
+      catalogosGuardados = JSON.parse(local);
+      poblarCatalogos(catalogosGuardados);
+    }
+  }
 
-      // El N° Aislador por defecto será 1 según tu diseño, pero asignamos la fase F1, F2, F3
-      if (valF1) mediciones.push({ fase: "F1", aisladorNum: 1, valor: valF1 });
-      if (valF2) mediciones.push({ fase: "F2", aisladorNum: 1, valor: valF2 });
-      if (valF3) mediciones.push({ fase: "F3", aisladorNum: 1, valor: valF3 });
+  function poblarCatalogos(data) {
+    const listLineas = document.getElementById("lista-lineas");
+    listLineas.innerHTML = "";
+    data.lineas.forEach(l => listLineas.innerHTML += `<option value="${l}">`);
 
-      if (mediciones.length === 0) {
-        alert("Debe ingresar al menos un valor de medición (F1, F2 o F3).");
-        return;
-      }
+    const selTipo = document.getElementById("tipoApoyo");
+    selTipo.innerHTML = '<option value="">Seleccione...</option>';
+    data.tiposApoyo.forEach(t => selTipo.innerHTML += `<option value="${t}">${t}</option>`);
+  }
 
-      // Estructura que espera el doPost de tu Apps Script
-      const payload = {
-        division: selDivision.value,
-        responsable: selResponsable.value,
-        linea: document.getElementById("linea").value,
-        perfilador: document.getElementById("perfilador").value,
-        piquete: document.getElementById("piquete").value,
-        tipoApoyo: selTipoApoyo.value,
-        mediciones: mediciones
-      };
+  function sincronizarCatalogos() {
+    const btn = document.getElementById("btn-force-sync");
+    btn.disabled = true;
+    btn.innerText = "⏳ Sincronizando...";
 
-      btnGuardar.disabled = true;
-      btnGuardar.innerText = "Enviando...";
-
-      fetch(SCRIPT_URL, {
-        method: "POST",
-        body: JSON.stringify(payload)
-      })
-      .then(res => res.json())
+    fetch(`${SCRIPT_URL}?nocache=${new Date().getTime()}`)
+      .then(r => r.json())
       .then(res => {
         if (res.status === "success") {
-          alert("✅ Datos guardados correctamente en la planilla.");
-          document.getElementById("form-perfilado").reset();
-          // Limpiar el combo de responsables
-          selResponsable.innerHTML = '<option value="">Seleccione primero la División...</option>';
-        } else {
-          alert("❌ Error desde el servidor: " + res.message);
+          catalogosGuardados = res.data;
+          localStorage.setItem("catalogos_pwa", JSON.stringify(res.data));
+          poblarCatalogos(res.data);
+          document.getElementById("sync-status").innerText = "✅ Catálogos sincronizados.";
         }
       })
-      .catch(err => {
-        alert("❌ Error de conexión al enviar los datos.");
-        console.error(err);
-      })
+      .catch(() => document.getElementById("sync-status").innerText = "❌ Error al sincronizar.")
       .finally(() => {
-        btnGuardar.disabled = false;
-        btnGuardar.innerText = "Guardar y Sincronizar";
+        btn.disabled = false;
+        btn.innerText = "🔄 Forzar Sincronización de Catálogos";
       });
+  }
+
+  function enviarFormulario(e) {
+    e.preventDefault();
+
+    const mediciones = [];
+    const ladoANombre = document.getElementById("lado-a").value || "LADO A";
+    const ladoBNombre = document.getElementById("lado-b").value || "LADO B";
+
+    document.querySelectorAll(".cell-val").forEach(input => {
+      if (input.value !== "") {
+        mediciones.push({
+          lado: input.dataset.lado === "A" ? ladoANombre : ladoBNombre,
+          fase: input.dataset.fase,
+          numAislador: input.dataset.num,
+          valor: input.value
+        });
+      }
     });
 
-    // Función auxiliar para mostrar mensajes
-    function mostrarEstado(mensaje, claseCss) {
-      statusDiv.innerText = mensaje;
-      statusDiv.className = `status-message ${claseCss}`;
+    if (mediciones.length === 0) {
+      alert("Ingrese al menos un valor de aislador en la tabla.");
+      return;
     }
-  </script>
+
+    const payload = {
+      division: document.getElementById("division").value,
+      responsable: document.getElementById("responsable").value,
+      linea: document.getElementById("linea").value,
+      tramoDe: document.getElementById("tramo-de").value,
+      tramoA: document.getElementById("tramo-a").value,
+      perfilador: document.getElementById("perfilador").value,
+      piquete: document.getElementById("piquete").value,
+      humedad: document.getElementById("humedad").value,
+      temperatura: document.getElementById("temperatura").value,
+      aisladorMarca: document.getElementById("aislador-marca").value,
+      tipoApoyo: document.getElementById("tipoApoyo").value,
+      obsTierra: document.getElementById("obs-tierra").value,
+      obsAisladores: document.getElementById("obs-aisladores").value,
+      observaciones: document.getElementById("observaciones").value,
+      mediciones: mediciones
+    };
+
+    const btnGuardar = document.getElementById("btn-guardar");
+    btnGuardar.disabled = true;
+    btnGuardar.innerText = "Guardando...";
+
+    fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(res => {
+      if (res.status === "success") {
+        alert("✅ Mediciones registradas correctamente.");
+        document.getElementById("form-perfilado").reset();
+        generarMatriz(12);
+      } else {
+        alert("Error: " + res.message);
+      }
+    })
+    .catch(() => alert("❌ Error de red al intentar guardar."))
+    .finally(() => {
+      btnGuardar.disabled = false;
+      btnGuardar.innerText = "Guardar y Sincronizar";
+    });
+  }
+</script>
 </body>
 </html>
