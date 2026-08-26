@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Perfilado de Cadenas de Aisladores</title>
+  <!-- Cargamos Chart.js para renderizar los gráficos en vivo -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --primary: #0d6efd;
@@ -90,6 +92,14 @@
       font-size: 0.85rem;
       border: none;
     }
+    /* Estilos del Contenedor del Gráfico */
+    .chart-container {
+      background: #f1f5f9;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 15px;
+      border: 1px solid #cbd5e1;
+    }
     .btn-submit {
       width: 100%;
       background-color: var(--primary);
@@ -125,7 +135,7 @@
 <body>
 
 <div class="container">
-  <h2>Perfilado de Cadenas de Aisladores 1.1.4</h2>
+  <h2>Perfilado de Cadenas de Aisladores 1.2.0</h2>
   
   <form id="form-perfilado">
     
@@ -176,11 +186,11 @@
 
     <div class="grid-2">
       <div class="form-group">
-        <label for="lado-a">Nombre Lado A (Estructura)</label>
+        <label for="lado-a">Nombre Lado A</label>
         <input type="text" id="lado-a" placeholder="Ej: Totoral" value="LADO A">
       </div>
       <div class="form-group">
-        <label for="lado-b">Nombre Lado B (Estructura)</label>
+        <label for="lado-b">Nombre Lado B</label>
         <input type="text" id="lado-b" placeholder="Ej: La Dormida" value="LADO B">
       </div>
     </div>
@@ -198,7 +208,7 @@
       </select>
     </div>
 
-    <!-- MATRIZ DINÁMICA -->
+    <!-- MATRIZ DINÁMICA DE CARGA -->
     <div class="table-responsive">
       <table class="matrix">
         <thead>
@@ -208,17 +218,29 @@
             <th colspan="3" id="th-lado-b">LADO B</th>
           </tr>
           <tr id="tr-subfases">
-            <!-- Renderizado dinámico según el Tipo de Apoyo seleccionado -->
+            <!-- Dinámico -->
           </tr>
         </thead>
         <tbody id="matrix-body">
-          <!-- Renderizado dinámico de filas por JS -->
+          <!-- Celdas cargadas por JS -->
         </tbody>
       </table>
     </div>
 
-    <!-- 3. ESTADO GENERAL Y OBSERVACIONES -->
-    <div class="section-title">3. Estado General y Observaciones</div>
+    <!-- 3. GRÁFICO EN TIEMPO REAL -->
+    <div class="section-title">3. Curva de Perfilado en Tiempo Real</div>
+    <div class="chart-container">
+      <div class="form-group">
+        <label for="select-curva-fase">Ver Curva de:</label>
+        <select id="select-curva-fase">
+          <!-- Se actualiza automáticamente según las columnas activas -->
+        </select>
+      </div>
+      <canvas id="perfilChart" height="200"></canvas>
+    </div>
+
+    <!-- 4. ESTADO GENERAL Y OBSERVACIONES -->
+    <div class="section-title">4. Estado General y Observaciones</div>
 
     <div class="form-group">
       <label for="obs-tierra">Estado Tomas de Tierra</label>
@@ -244,8 +266,10 @@
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZneJSFTp4FZOrGP4AlYOjgLqV_odof8KmiYscquPDo9GYzrRMVNpLTkz4KF3-YxLk/exec";
   let catalogosGuardados = null;
   let esRetencion = false;
+  let chartInstance = null;
 
   document.addEventListener("DOMContentLoaded", () => {
+    inicializarGrafico();
     actualizarEstructuraMatriz();
     cargarDatosDesdeCache();
     setupEvents();
@@ -257,6 +281,37 @@
     return txt.includes("RET") || txt.includes("RETENCION") || txt.includes("DOBLE") || txt.includes("ANGULO");
   }
 
+  function inicializarGrafico() {
+    const ctx = document.getElementById('perfilChart').getContext('2d');
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [1, 2, 3, 4, 5, 6],
+        datasets: [{
+          label: 'Resultado Perfilado',
+          data: [null, null, null, null, null, null],
+          borderColor: '#0d6efd',
+          backgroundColor: '#0d6efd',
+          tension: 0.4, // Suavizado de la curva igual a la imagen de ejemplo
+          borderWidth: 3,
+          pointRadius: 5
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            title: { display: true, text: 'Aislador N° (desde conductor)' }
+          },
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'Resultado (kV / Valor)' }
+          }
+        }
+      }
+    });
+  }
+
   function actualizarEstructuraMatriz() {
     const cant = parseInt(document.getElementById("cant-aisladores").value) || 6;
     const tipoSeleccionado = document.getElementById("tipoApoyo").value;
@@ -266,17 +321,18 @@
     const thLadoB = document.getElementById("th-lado-b");
     const trSubfases = document.getElementById("tr-subfases");
 
+    const ladoANombre = document.getElementById("lado-a").value || "LADO A";
+    const ladoBNombre = document.getElementById("lado-b").value || "LADO B";
+
+    let fases = [];
     if (esRetencion) {
       thLadoA.colSpan = 6;
       thLadoB.colSpan = 6;
       trSubfases.innerHTML = `
-        <th>I-Ext</th><th>I-Int</th>
-        <th>II-Ext</th><th>II-Int</th>
-        <th>III-Ext</th><th>III-Int</th>
-        <th>I-Ext</th><th>I-Int</th>
-        <th>II-Ext</th><th>II-Int</th>
-        <th>III-Ext</th><th>III-Int</th>
+        <th>I-Ext</th><th>I-Int</th><th>II-Ext</th><th>II-Int</th><th>III-Ext</th><th>III-Int</th>
+        <th>I-Ext</th><th>I-Int</th><th>II-Ext</th><th>II-Int</th><th>III-Ext</th><th>III-Int</th>
       `;
+      fases = ["I-Ext", "I-Int", "II-Ext", "II-Int", "III-Ext", "III-Int"];
     } else {
       thLadoA.colSpan = 3;
       thLadoB.colSpan = 3;
@@ -284,42 +340,91 @@
         <th>I</th><th>II</th><th>III</th>
         <th>I</th><th>II</th><th>III</th>
       `;
+      fases = ["I", "II", "III"];
     }
 
-    // Renderizar filas
+    // Actualizar el selector de fase para el gráfico
+    const selectCurva = document.getElementById("select-curva-fase");
+    const valorSeleccionadoPrevio = selectCurva.value;
+    selectCurva.innerHTML = "";
+    
+    fases.forEach(f => {
+      selectCurva.innerHTML += `<option value="A_${f}">${ladoANombre} - Fase ${f}</option>`;
+    });
+    fases.forEach(f => {
+      selectCurva.innerHTML += `<option value="B_${f}">${ladoBNombre} - Fase ${f}</option>`;
+    });
+
+    if (valorSeleccionadoPrevio) selectCurva.value = valorSeleccionadoPrevio;
+
+    // Renderizar la tabla
     const tbody = document.getElementById("matrix-body");
     tbody.innerHTML = "";
-    const fasesLado = esRetencion 
-      ? ["I-Ext", "I-Int", "II-Ext", "II-Int", "III-Ext", "III-Int"]
-      : ["I", "II", "III"];
 
-    for (let i = cant; i >= 1; i--) {
+    for (let i = 1; i <= cant; i++) {
       const tr = document.createElement("tr");
       let html = `<td><b>${i}</b></td>`;
 
-      // Celdas Lado A
-      fasesLado.forEach(fase => {
+      fases.forEach(fase => {
         html += `<td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="A" data-fase="${fase}"></td>`;
       });
-      // Celdas Lado B
-      fasesLado.forEach(fase => {
+      fases.forEach(fase => {
         html += `<td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="B" data-fase="${fase}"></td>`;
       });
 
       tr.innerHTML = html;
       tbody.appendChild(tr);
     }
+
+    actualizarGrafico();
+  }
+
+  function actualizarGrafico() {
+    if (!chartInstance) return;
+
+    const cant = parseInt(document.getElementById("cant-aisladores").value) || 6;
+    const opcionCurva = document.getElementById("select-curva-fase").value; // Ej: "A_I" o "B_II-Ext"
+    if (!opcionCurva) return;
+
+    const [ladoSel, faseSel] = opcionCurva.split("_");
+
+    let labels = [];
+    let dataValues = [];
+
+    for (let i = 1; i <= cant; i++) {
+      labels.push(i);
+      const input = document.querySelector(`.cell-val[data-num="${i}"][data-lado="${ladoSel}"][data-fase="${faseSel}"]`);
+      if (input && input.value !== "") {
+        dataValues.push(parseFloat(input.value));
+      } else {
+        dataValues.push(null);
+      }
+    }
+
+    chartInstance.data.labels = labels;
+    chartInstance.data.datasets[0].data = dataValues;
+    chartInstance.update();
   }
 
   function setupEvents() {
     document.getElementById("cant-aisladores").addEventListener("change", actualizarEstructuraMatriz);
     document.getElementById("tipoApoyo").addEventListener("change", actualizarEstructuraMatriz);
+    document.getElementById("select-curva-fase").addEventListener("change", actualizarGrafico);
+
+    // Escuchar tipeo en las celdas para redibujar el gráfico inmediatamente
+    document.getElementById("matrix-body").addEventListener("input", (e) => {
+      if (e.target.classList.contains("cell-val")) {
+        actualizarGrafico();
+      }
+    });
 
     document.getElementById("lado-a").addEventListener("input", (e) => {
       document.getElementById("th-lado-a").innerText = e.target.value.toUpperCase() || "LADO A";
+      actualizarEstructuraMatriz();
     });
     document.getElementById("lado-b").addEventListener("input", (e) => {
       document.getElementById("th-lado-b").innerText = e.target.value.toUpperCase() || "LADO B";
+      actualizarEstructuraMatriz();
     });
 
     document.getElementById("division").addEventListener("change", function() {
