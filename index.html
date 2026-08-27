@@ -67,7 +67,6 @@
       box-sizing: border-box;
       font-size: 0.9rem;
     }
-    /* Estilo para la lista flotante personalizada estilo App */
     .dropdown-card {
       position: absolute;
       top: 100%;
@@ -168,7 +167,7 @@
 <body>
 
 <div class="container">
-  <h2>Perfilado de Cadenas de Aisladores 1.3.1</h2>
+  <h2>Perfilado de Cadenas de Aisladores 1.3.2</h2>
   
   <form id="form-perfilado">
     
@@ -192,7 +191,6 @@
       </div>
     </div>
 
-    <!-- AUTOCOMPLETADO DESPLEGABLE PERSONALIZADO -->
     <div class="form-group">
       <label for="linea">Línea de Alta Tensión (LAT)</label>
       <input type="text" id="linea" placeholder="Buscar línea..." required autocomplete="off">
@@ -210,16 +208,16 @@
       </div>
     </div>
 
-    <div class="grid-2">
-      <div class="form-group">
-        <label for="tipoApoyo">Tipo de Apoyo / Cadena</label>
-        <select id="tipoApoyo" required><option value="">Seleccione...</option></select>
-      </div>
-      <div class="form-group">
-        <label>Ubicación GPS</label>
-        <input type="text" id="coordenadas" readonly placeholder="Obteniendo GPS...">
-        <div class="gps-info" id="gps-status">Solicitando permiso de GPS...</div>
-      </div>
+    <!-- COORDENADAS Y TIPO DE APOYO REORDENADOS (TIPO DE APOYO ABAJO) -->
+    <div class="form-group">
+      <label>Ubicación GPS</label>
+      <input type="text" id="coordenadas" readonly placeholder="Obteniendo GPS...">
+      <div class="gps-info" id="gps-status">Solicitando permiso de GPS...</div>
+    </div>
+
+    <div class="form-group">
+      <label for="tipoApoyo">Tipo de Apoyo / Cadena</label>
+      <select id="tipoApoyo" required><option value="">Seleccione...</option></select>
     </div>
 
     <!-- 2. PLANILLA DE LECTURAS REGISTRADAS -->
@@ -338,9 +336,10 @@
 
   function obtenerModoMatriz(tipoApoyo) {
     if (!tipoApoyo) return "RD";
-    const txt = tipoApoyo.toUpperCase();
+    const txt = tipoApoyo.toUpperCase().trim();
     if (txt.includes("SUSPENSION SIMPLE") || txt === "SS") return "SS";
-    if (txt.includes("SUSPENSION DOBLE") || txt === "SD" || txt.includes("RETENCION SIMPLE") || txt === "RS") return "SD_RS";
+    // RETENCION SIMPLE y SUSPENSION DOBLE comparten exactamente la misma matriz (Lado A y Lado B con 3 fases cada uno)
+    if (txt.includes("SUSPENSION DOBLE") || txt === "SD" || txt.includes("RETENCION SIMPLE") || txt.includes("RETEN CION SIMPLE") || txt === "RS") return "SD_RS";
     return "RD";
   }
 
