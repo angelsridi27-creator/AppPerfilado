@@ -51,6 +51,7 @@
     }
     .form-group {
       margin-bottom: 12px;
+      position: relative;
     }
     label {
       display: block;
@@ -65,6 +66,35 @@
       border-radius: 5px;
       box-sizing: border-box;
       font-size: 0.9rem;
+    }
+    /* Estilo para la lista flotante personalizada estilo App */
+    .dropdown-card {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+    .dropdown-item {
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      border-bottom: 1px solid #f1f3f5;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .dropdown-item:last-child {
+      border-bottom: none;
+    }
+    .dropdown-item:hover {
+      background-color: #e7f1ff;
+      color: var(--primary);
     }
     .table-responsive {
       overflow-x: auto;
@@ -138,7 +168,7 @@
 <body>
 
 <div class="container">
-  <h2>Perfilado de Cadenas de Aisladores 1.3.0</h2>
+  <h2>Perfilado de Cadenas de Aisladores 1.3.1</h2>
   
   <form id="form-perfilado">
     
@@ -162,10 +192,11 @@
       </div>
     </div>
 
+    <!-- AUTOCOMPLETADO DESPLEGABLE PERSONALIZADO -->
     <div class="form-group">
-      <label for="linea">Línea</label>
-      <input type="text" id="linea" list="lista-lineas" placeholder="Buscar línea..." required autocomplete="off">
-      <datalist id="lista-lineas"></datalist>
+      <label for="linea">Línea de Alta Tensión (LAT)</label>
+      <input type="text" id="linea" placeholder="Buscar línea..." required autocomplete="off">
+      <div id="lineas-dropdown" class="dropdown-card"></div>
     </div>
 
     <div class="grid-2">
@@ -267,7 +298,7 @@
 
 <script>
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZneJSFTp4FZOrGP4AlYOjgLqV_odof8KmiYscquPDo9GYzrRMVNpLTkz4KF3-YxLk/exec";
-  let catalogosGuardados = null;
+  let catalogosGuardados = { lineas: [], responsables: {}, tiposApoyo: [] };
   let chartInstance = null;
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -276,6 +307,7 @@
     actualizarEstructuraMatriz();
     cargarDatosDesdeCache();
     setupEvents();
+    sincronizarCatalogos();
   });
 
   function obtenerUbicacionGPS() {
@@ -305,11 +337,11 @@
   }
 
   function obtenerModoMatriz(tipoApoyo) {
-    if (!tipoApoyo) return "RD"; // Retención doble por defecto
+    if (!tipoApoyo) return "RD";
     const txt = tipoApoyo.toUpperCase();
     if (txt.includes("SUSPENSION SIMPLE") || txt === "SS") return "SS";
     if (txt.includes("SUSPENSION DOBLE") || txt === "SD" || txt.includes("RETENCION SIMPLE") || txt === "RS") return "SD_RS";
-    return "RD"; // Retención Doble
+    return "RD";
   }
 
   function inicializarGrafico() {
@@ -317,10 +349,10 @@
     chartInstance = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: [0, 1, 2, 3, 4, 5, 6],
+        labels: [0, 1, 2, 3, 4, 5],
         datasets: [{
           label: 'Resultado Perfilado',
-          data: [null, null, null, null, null, null, null],
+          data: [null, null, null, null, null, null],
           borderColor: '#0d6efd',
           backgroundColor: '#0d6efd',
           tension: 0.4,
@@ -333,7 +365,7 @@
         scales: {
           x: {
             title: { display: true, text: 'Aislador N°' },
-            min: 0 // El eje X comienza en 0
+            min: 0
           },
           y: {
             beginAtZero: true,
@@ -370,7 +402,7 @@
       trSubfases.innerHTML = `<th>I</th><th>II</th><th>III</th><th>I</th><th>II</th><th>III</th>`;
       fasesA = ["I", "II", "III"];
       fasesB = ["I", "II", "III"];
-    } else { // RD (Retención Doble)
+    } else {
       groupLadoB.style.display = "block";
       trHeaderLados.innerHTML = `<th rowspan="2">Ais. N°</th><th colspan="6">${ladoANombre}</th><th colspan="6">${ladoBNombre}</th>`;
       trSubfases.innerHTML = `
@@ -381,7 +413,6 @@
       fasesB = ["I-Ext", "I-Int", "II-Ext", "II-Int", "III-Ext", "III-Int"];
     }
 
-    // Actualizar selector del gráfico
     const selectCurva = document.getElementById("select-curva-fase");
     const valPrevio = selectCurva.value;
     selectCurva.innerHTML = "";
@@ -391,7 +422,6 @@
 
     if (valPrevio) selectCurva.value = valPrevio;
 
-    // Renderizar cuerpo de la tabla
     const tbody = document.getElementById("matrix-body");
     tbody.innerHTML = "";
 
@@ -422,7 +452,6 @@
 
     const [ladoSel, faseSel] = opcionCurva.split("_");
 
-    // Eje X desde 0 hasta N
     let labels = [0];
     let dataValues = [null];
 
@@ -441,7 +470,48 @@
     chartInstance.update();
   }
 
+  function renderLineaDropdown(query = "") {
+    const dropdown = document.getElementById("lineas-dropdown");
+    dropdown.innerHTML = "";
+    
+    if (!catalogosGuardados.lineas) return;
+
+    const filtradas = catalogosGuardados.lineas.filter(l => 
+      l.toLowerCase().includes(query.toLowerCase())
+    );
+
+    if (filtradas.length === 0) {
+      dropdown.style.display = "none";
+      return;
+    }
+
+    filtradas.forEach(lineaText => {
+      const item = document.createElement("div");
+      item.className = "dropdown-item";
+      item.textContent = lineaText;
+      item.addEventListener("click", () => {
+        document.getElementById("linea").value = lineaText;
+        dropdown.style.display = "none";
+      });
+      dropdown.appendChild(item);
+    });
+
+    dropdown.style.display = "block";
+  }
+
   function setupEvents() {
+    const inputLinea = document.getElementById("linea");
+    const dropdownLinea = document.getElementById("lineas-dropdown");
+
+    inputLinea.addEventListener("focus", () => renderLineaDropdown(inputLinea.value));
+    inputLinea.addEventListener("input", () => renderLineaDropdown(inputLinea.value));
+
+    document.addEventListener("click", (e) => {
+      if (!inputLinea.contains(e.target) && !dropdownLinea.contains(e.target)) {
+        dropdownLinea.style.display = "none";
+      }
+    });
+
     document.getElementById("cant-aisladores").addEventListener("change", actualizarEstructuraMatriz);
     document.getElementById("tipoApoyo").addEventListener("change", actualizarEstructuraMatriz);
     document.getElementById("select-curva-fase").addEventListener("change", actualizarGrafico);
@@ -458,7 +528,7 @@
     document.getElementById("division").addEventListener("change", function() {
       const respSelect = document.getElementById("responsable");
       respSelect.innerHTML = '<option value="">Seleccione...</option>';
-      if (this.value && catalogosGuardados && catalogosGuardados.responsables[this.value]) {
+      if (this.value && catalogosGuardados.responsables && catalogosGuardados.responsables[this.value]) {
         catalogosGuardados.responsables[this.value].forEach(r => {
           respSelect.innerHTML += `<option value="${r}">${r}</option>`;
         });
@@ -478,13 +548,20 @@
   }
 
   function poblarCatalogos(data) {
-    const listLineas = document.getElementById("lista-lineas");
-    listLineas.innerHTML = "";
-    data.lineas.forEach(l => listLineas.innerHTML += `<option value="${l}">`);
-
     const selTipo = document.getElementById("tipoApoyo");
     selTipo.innerHTML = '<option value="">Seleccione...</option>';
-    data.tiposApoyo.forEach(t => selTipo.innerHTML += `<option value="${t}">${t}</option>`);
+    if (data.tiposApoyo) {
+      data.tiposApoyo.forEach(t => selTipo.innerHTML += `<option value="${t}">${t}</option>`);
+    }
+
+    const divisionVal = document.getElementById("division").value;
+    if (divisionVal && data.responsables && data.responsables[divisionVal]) {
+      const respSelect = document.getElementById("responsable");
+      respSelect.innerHTML = '<option value="">Seleccione...</option>';
+      data.responsables[divisionVal].forEach(r => {
+        respSelect.innerHTML += `<option value="${r}">${r}</option>`;
+      });
+    }
   }
 
   function sincronizarCatalogos() {
@@ -515,6 +592,7 @@
     const mediciones = [];
     const ladoANombre = document.getElementById("lado-a").value || "LADO A";
     const ladoBNombre = document.getElementById("lado-b").value || "LADO B";
+    const cantAisladoresVal = parseInt(document.getElementById("cant-aisladores").value) || 6;
 
     document.querySelectorAll(".cell-val").forEach(input => {
       if (input.value !== "") {
@@ -540,6 +618,7 @@
       perfilador: document.getElementById("perfilador").value,
       piquete: document.getElementById("piquete").value,
       tipoApoyo: document.getElementById("tipoApoyo").value,
+      cantAisladores: cantAisladoresVal,
       coordenadas: document.getElementById("coordenadas").value,
       ladoA: ladoANombre,
       ladoB: ladoBNombre,
@@ -560,9 +639,9 @@
     .then(r => r.json())
     .then(res => {
       if (res.status === "success") {
-        alert("✅ Mediciones registradas correctamente.");
+        alert("✅ Mediciones registradas en la hoja: " + res.sheet);
         
-        // REINICIO PARCIAL: Conserva División, Responsable, Línea y Perfilador
+        // Conserva División, Responsable, Línea y Perfilador
         document.getElementById("piquete").value = "";
         document.getElementById("tipoApoyo").value = "";
         document.getElementById("obs-tierra").value = "";
@@ -570,7 +649,7 @@
         document.getElementById("observaciones").value = "";
 
         actualizarEstructuraMatriz();
-        obtenerUbicacionGPS(); // Recarga GPS para el siguiente piquete
+        obtenerUbicacionGPS();
       } else {
         alert("Error: " + res.message);
       }
