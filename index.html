@@ -24,7 +24,7 @@
     }
     .container {
       width: 100%;
-      max-width: 700px;
+      max-width: 750px;
       background: var(--card-bg);
       padding: 18px;
       border-radius: 10px;
@@ -43,16 +43,6 @@
       padding-bottom: 4px;
       margin: 15px 0 10px 0;
       font-size: 0.95rem;
-    }
-    .lado-title {
-      font-weight: bold;
-      color: var(--primary);
-      margin: 12px 0 6px 0;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      background: #e7f1ff;
-      padding: 6px 10px;
-      border-radius: 4px;
     }
     .grid-2 {
       display: grid;
@@ -98,9 +88,6 @@
       cursor: pointer;
       font-weight: 500;
     }
-    .dropdown-item:last-child {
-      border-bottom: none;
-    }
     .dropdown-item:hover {
       background-color: #e7f1ff;
       color: var(--primary);
@@ -109,28 +96,51 @@
       overflow-x: auto;
       margin-top: 10px;
     }
+    
+    /* ESTILOS EXACTOS TIPO EXCEL EDICIÓN RECUADRO */
     table.matrix {
       width: 100%;
       border-collapse: collapse;
       font-size: 0.8rem;
+      border: 2px solid #000000;
+      background-color: #ffffff;
     }
     table.matrix th, table.matrix td {
-      border: 1px solid var(--border);
-      padding: 4px 2px;
+      border: 1px solid #000000;
+      padding: 2px 1px;
       text-align: center;
     }
-    table.matrix th {
-      background-color: #e9ecef;
+    /* ENCABEZADO AZUL */
+    table.matrix th.header-blue {
+      background-color: #000080;
+      color: #ffffff;
+      font-weight: bold;
       font-size: 0.75rem;
+      padding: 6px 2px;
+    }
+    /* FILA Y COLUMNA AMARILLA */
+    .bg-yellow {
+      background-color: #ffff00 !important;
+      font-weight: bold;
+      color: #000000;
+    }
+    .border-divider {
+      border-right: 2px solid #000000 !important;
     }
     table.matrix input {
       width: 100%;
-      padding: 6px 2px;
+      padding: 5px 2px;
       text-align: center;
       font-size: 0.85rem;
       border: none;
+      background: transparent;
       box-sizing: border-box;
     }
+    table.matrix input:focus {
+      outline: 2px solid var(--primary);
+      background-color: #e7f1ff;
+    }
+
     .chart-container {
       background: #f1f5f9;
       padding: 12px;
@@ -178,7 +188,7 @@
 <body>
 
 <div class="container">
-  <h2>Perfilado de Cadenas de Aisladores 1.4.0</h2>
+  <h2>Perfilado de Cadenas de Aisladores 1.4.1</h2>
   
   <form id="form-perfilado">
     
@@ -202,7 +212,6 @@
       </div>
     </div>
 
-    <!-- LÍNEA EN FILA INDIVIDUAL -->
     <div class="form-group">
       <label for="linea">Línea de Alta Tensión (LAT)</label>
       <input type="text" id="linea" placeholder="Buscar línea..." required autocomplete="off">
@@ -236,11 +245,11 @@
     <div class="grid-2" id="box-nombres-lados">
       <div class="form-group" id="group-lado-a">
         <label for="lado-a">Nombre Lado A <span id="req-lado-a"></span></label>
-        <input type="text" id="lado-a" placeholder="Ej: Totoral" value="LADO A">
+        <input type="text" id="lado-a" placeholder="Ej: Totoral" value="Totoral">
       </div>
       <div class="form-group" id="group-lado-b">
         <label for="lado-b">Nombre Lado B <span id="req-lado-b"></span></label>
-        <input type="text" id="lado-b" placeholder="Ej: La Dormida" value="LADO B">
+        <input type="text" id="lado-b" placeholder="Ej: Dormida" value="Dormida">
       </div>
     </div>
 
@@ -378,23 +387,35 @@
     chartInstance = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: [0, 1, 2, 3, 4, 5],
+        labels: [1, 2, 3, 4, 5, 6],
         datasets: [{
           label: 'Resultado Perfilado',
-          data: [null, null, null, null, null, null],
+          data: [],
           borderColor: '#0d6efd',
           backgroundColor: '#0d6efd',
-          tension: 0.4,
+          tension: 0.3,
           borderWidth: 3,
           pointRadius: 5
         }]
       },
       options: {
         responsive: true,
+        plugins: {
+          legend: {
+            display: false // Oculta la leyenda superior para ahorrar espacio vertical
+          }
+        },
         scales: {
           x: {
             title: { display: true, text: 'Aislador N°' },
-            min: 0
+            type: 'linear',
+            min: 0.5,
+            max: 6.5,
+            offset: false,
+            ticks: {
+              stepSize: 1,
+              precision: 0
+            }
           },
           y: {
             beginAtZero: true,
@@ -436,18 +457,21 @@
 
     if (modo === "SS") {
       groupLadoB.style.display = "none";
-      fasesA = ["I", "II", "III"];
+      fasesA = ["F1 Externa", "F2 Externa", "F3 Externa"];
 
       container.innerHTML = `
         <div class="table-responsive">
           <table class="matrix">
             <thead>
               <tr>
-                <th rowspan="2">Ais. N°</th>
-                <th colspan="3">${ladoANombre}</th>
+                <th class="header-blue">N° AISLADOR</th>
+                <th class="header-blue">F1 Externa</th>
+                <th class="header-blue">F2 Externa</th>
+                <th class="header-blue">F3 Externa</th>
               </tr>
               <tr>
-                <th>I</th><th>II</th><th>III</th>
+                <th class="bg-yellow"></th>
+                <th colspan="3" class="bg-yellow">${ladoANombre}</th>
               </tr>
             </thead>
             <tbody id="body-a"></tbody>
@@ -455,25 +479,30 @@
         </div>
       `;
 
-      poblarFilasTabla("body-a", "A", fasesA, cant);
+      poblarFilasTablaSimple("body-a", "A", fasesA, cant);
 
     } else if (modo === "SD_RS") {
       groupLadoB.style.display = "block";
-      fasesA = ["I", "II", "III"];
-      fasesB = ["I", "II", "III"];
+      fasesA = ["F1 Externa", "F2 Externa", "F3 Externa"];
+      fasesB = ["F1 Externa", "F2 Externa", "F3 Externa"];
 
       container.innerHTML = `
         <div class="table-responsive">
           <table class="matrix">
             <thead>
               <tr>
-                <th rowspan="2">Ais. N°</th>
-                <th colspan="3">${ladoANombre}</th>
-                <th colspan="3">${ladoBNombre}</th>
+                <th class="header-blue">N° AISLADOR</th>
+                <th class="header-blue">F1 Externa</th>
+                <th class="header-blue">F2 Externa</th>
+                <th class="header-blue border-divider">F3 Externa</th>
+                <th class="header-blue">F1 Externa</th>
+                <th class="header-blue">F2 Externa</th>
+                <th class="header-blue">F3 Externa</th>
               </tr>
               <tr>
-                <th>I</th><th>II</th><th>III</th>
-                <th>I</th><th>II</th><th>III</th>
+                <th class="bg-yellow"></th>
+                <th colspan="3" class="bg-yellow border-divider">${ladoANombre}</th>
+                <th colspan="3" class="bg-yellow">${ladoBNombre}</th>
               </tr>
             </thead>
             <tbody id="body-combinado"></tbody>
@@ -484,66 +513,63 @@
       poblarFilasTablaCombinada("body-combinado", fasesA, fasesB, cant);
 
     } else { 
-      // RETENCION DOBLE (RD): Lado B debajo de Lado A
+      // RETENCION DOBLE (RD)
       groupLadoB.style.display = "block";
-      fasesA = ["I-Ext", "I-Int", "II-Ext", "II-Int", "III-Ext", "III-Int"];
-      fasesB = ["I-Ext", "I-Int", "II-Ext", "II-Int", "III-Ext", "III-Int"];
+      fasesA = ["F1 Externa", "F1 Interna", "F2 Externa", "F2 Interna", "F3 Externa", "F3 Interna"];
+      fasesB = ["F1 Externa", "F1 Interna", "F2 Externa", "F2 Interna", "F3 Externa", "F3 Interna"];
 
       container.innerHTML = `
-        <div class="lado-title">📍 ${ladoANombre}</div>
         <div class="table-responsive">
           <table class="matrix">
             <thead>
               <tr>
-                <th>Ais. N°</th>
-                <th>I-Ext</th><th>I-Int</th>
-                <th>II-Ext</th><th>II-Int</th>
-                <th>III-Ext</th><th>III-Int</th>
+                <th class="header-blue">N° AISLADOR</th>
+                <th class="header-blue">F1 Externa</th>
+                <th class="header-blue">F1 Interna</th>
+                <th class="header-blue">F2 Externa</th>
+                <th class="header-blue">F2 Interna</th>
+                <th class="header-blue">F3 Externa</th>
+                <th class="header-blue border-divider">F3 Interna</th>
+                <th class="header-blue">F1 Externa</th>
+                <th class="header-blue">F1 Interna</th>
+                <th class="header-blue">F2 Externa</th>
+                <th class="header-blue">F2 Interna</th>
+                <th class="header-blue">F3 Externa</th>
+                <th class="header-blue">F3 Interna</th>
               </tr>
-            </thead>
-            <tbody id="body-a"></tbody>
-          </table>
-        </div>
-
-        <div class="lado-title" style="margin-top: 15px;">📍 ${ladoBNombre}</div>
-        <div class="table-responsive">
-          <table class="matrix">
-            <thead>
               <tr>
-                <th>Ais. N°</th>
-                <th>I-Ext</th><th>I-Int</th>
-                <th>II-Ext</th><th>II-Int</th>
-                <th>III-Ext</th><th>III-Int</th>
+                <th class="bg-yellow"></th>
+                <th colspan="6" class="bg-yellow border-divider">${ladoANombre}</th>
+                <th colspan="6" class="bg-yellow">${ladoBNombre}</th>
               </tr>
             </thead>
-            <tbody id="body-b"></tbody>
+            <tbody id="body-combinado"></tbody>
           </table>
         </div>
       `;
 
-      poblarFilasTabla("body-a", "A", fasesA, cant);
-      poblarFilasTabla("body-b", "B", fasesB, cant);
+      poblarFilasTablaCombinada("body-combinado", fasesA, fasesB, cant);
     }
 
     const selectCurva = document.getElementById("select-curva-fase");
     const valPrevio = selectCurva.value;
     selectCurva.innerHTML = "";
     
-    fasesA.forEach(f => selectCurva.innerHTML += `<option value="A_${f}">${ladoANombre} - Fase ${f}</option>`);
-    fasesB.forEach(f => selectCurva.innerHTML += `<option value="B_${f}">${ladoBNombre} - Fase ${f}</option>`);
+    fasesA.forEach(f => selectCurva.innerHTML += `<option value="A_${f}">${ladoANombre} - ${f}</option>`);
+    fasesB.forEach(f => selectCurva.innerHTML += `<option value="B_${f}">${ladoBNombre} - ${f}</option>`);
 
     if (valPrevio) selectCurva.value = valPrevio;
 
     actualizarGrafico();
   }
 
-  function poblarFilasTabla(tbodyId, ladoKey, fases, cant) {
+  function poblarFilasTablaSimple(tbodyId, ladoKey, fases, cant) {
     const tbody = document.getElementById(tbodyId);
     if (!tbody) return;
 
     for (let i = 1; i <= cant; i++) {
       const tr = document.createElement("tr");
-      let html = `<td><b>${i}</b></td>`;
+      let html = `<td class="bg-yellow">${i}</td>`;
 
       fases.forEach(fase => {
         html += `<td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="${ladoKey}" data-fase="${fase}"></td>`;
@@ -560,11 +586,16 @@
 
     for (let i = 1; i <= cant; i++) {
       const tr = document.createElement("tr");
-      let html = `<td><b>${i}</b></td>`;
+      let html = `<td class="bg-yellow">${i}</td>`;
 
-      fasesA.forEach(fase => {
-        html += `<td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="A" data-fase="${fase}"></td>`;
+      // LADO A
+      fasesA.forEach((fase, index) => {
+        const isLast = index === fasesA.length - 1;
+        const dividerClass = isLast ? 'border-divider' : '';
+        html += `<td class="${dividerClass}"><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="A" data-fase="${fase}"></td>`;
       });
+
+      // LADO B
       fasesB.forEach(fase => {
         html += `<td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="B" data-fase="${fase}"></td>`;
       });
@@ -583,21 +614,23 @@
 
     const [ladoSel, faseSel] = opcionCurva.split("_");
 
-    let labels = [0];
-    let dataValues = [null];
+    let points = [];
+    let labels = [];
 
     for (let i = 1; i <= cant; i++) {
       labels.push(i);
       const input = document.querySelector(`.cell-val[data-num="${i}"][data-lado="${ladoSel}"][data-fase="${faseSel}"]`);
       if (input && input.value !== "") {
-        dataValues.push(parseFloat(input.value));
-      } else {
-        dataValues.push(null);
+        points.push({ x: i, y: parseFloat(input.value) });
       }
     }
 
+    // Centrado de la escala X según la cantidad total de aisladores
+    chartInstance.options.scales.x.min = 0.5;
+    chartInstance.options.scales.x.max = cant + 0.5;
+
     chartInstance.data.labels = labels;
-    chartInstance.data.datasets[0].data = dataValues;
+    chartInstance.data.datasets[0].data = points;
     chartInstance.update();
   }
 
@@ -724,7 +757,6 @@
     const inputLadoA = document.getElementById("lado-a");
     const inputLadoB = document.getElementById("lado-b");
 
-    // Validar obligación de LADO A y LADO B para RETENCIÓN
     if (esTipoRetencion(tipoApoyoVal)) {
       if (!inputLadoA.value.trim()) {
         alert("⚠️ Por favor ingrese el nombre para LADO A (Obligatorio en Retención).");
