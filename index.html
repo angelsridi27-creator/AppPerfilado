@@ -104,6 +104,7 @@
       font-size: 0.8rem;
       border: 2px solid #000000;
       background-color: #ffffff;
+      margin-bottom: 15px;
     }
     table.matrix th, table.matrix td {
       border: 1px solid #000000;
@@ -188,7 +189,7 @@
 <body>
 
 <div class="container">
-  <h2>Perfilado de Cadenas de Aisladores 1.4.1</h2>
+  <h2>Perfilado de Cadenas de Aisladores 1.4.2</h2>
   
   <form id="form-perfilado">
     
@@ -245,11 +246,11 @@
     <div class="grid-2" id="box-nombres-lados">
       <div class="form-group" id="group-lado-a">
         <label for="lado-a">Nombre Lado A <span id="req-lado-a"></span></label>
-        <input type="text" id="lado-a" placeholder="Ej: Totoral" value="Totoral">
+        <input type="text" id="lado-a" placeholder="Ej: LADO A" value="LADO A">
       </div>
       <div class="form-group" id="group-lado-b">
         <label for="lado-b">Nombre Lado B <span id="req-lado-b"></span></label>
-        <input type="text" id="lado-b" placeholder="Ej: Dormida" value="Dormida">
+        <input type="text" id="lado-b" placeholder="Ej: LADO B" value="LADO B">
       </div>
     </div>
 
@@ -402,7 +403,7 @@
         responsive: true,
         plugins: {
           legend: {
-            display: false // Oculta la leyenda superior para ahorrar espacio vertical
+            display: false
           }
         },
         scales: {
@@ -513,12 +514,13 @@
       poblarFilasTablaCombinada("body-combinado", fasesA, fasesB, cant);
 
     } else { 
-      // RETENCION DOBLE (RD)
+      // RETENCION DOBLE (RD): Tablas apiladas (Lado A arriba, Lado B debajo)
       groupLadoB.style.display = "block";
       fasesA = ["F1 Externa", "F1 Interna", "F2 Externa", "F2 Interna", "F3 Externa", "F3 Interna"];
       fasesB = ["F1 Externa", "F1 Interna", "F2 Externa", "F2 Interna", "F3 Externa", "F3 Interna"];
 
       container.innerHTML = `
+        <!-- TABLA LADO A -->
         <div class="table-responsive">
           <table class="matrix">
             <thead>
@@ -529,7 +531,23 @@
                 <th class="header-blue">F2 Externa</th>
                 <th class="header-blue">F2 Interna</th>
                 <th class="header-blue">F3 Externa</th>
-                <th class="header-blue border-divider">F3 Interna</th>
+                <th class="header-blue">F3 Interna</th>
+              </tr>
+              <tr>
+                <th class="bg-yellow"></th>
+                <th colspan="6" class="bg-yellow">${ladoANombre}</th>
+              </tr>
+            </thead>
+            <tbody id="body-lado-a"></tbody>
+          </table>
+        </div>
+
+        <!-- TABLA LADO B -->
+        <div class="table-responsive">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th class="header-blue">N° AISLADOR</th>
                 <th class="header-blue">F1 Externa</th>
                 <th class="header-blue">F1 Interna</th>
                 <th class="header-blue">F2 Externa</th>
@@ -539,16 +557,16 @@
               </tr>
               <tr>
                 <th class="bg-yellow"></th>
-                <th colspan="6" class="bg-yellow border-divider">${ladoANombre}</th>
                 <th colspan="6" class="bg-yellow">${ladoBNombre}</th>
               </tr>
             </thead>
-            <tbody id="body-combinado"></tbody>
+            <tbody id="body-lado-b"></tbody>
           </table>
         </div>
       `;
 
-      poblarFilasTablaCombinada("body-combinado", fasesA, fasesB, cant);
+      poblarFilasTablaSimple("body-lado-a", "A", fasesA, cant);
+      poblarFilasTablaSimple("body-lado-b", "B", fasesB, cant);
     }
 
     const selectCurva = document.getElementById("select-curva-fase");
@@ -625,7 +643,6 @@
       }
     }
 
-    // Centrado de la escala X según la cantidad total de aisladores
     chartInstance.options.scales.x.min = 0.5;
     chartInstance.options.scales.x.max = cant + 0.5;
 
