@@ -167,7 +167,7 @@
 <body>
 
 <div class="container">
-  <h2>Perfilado de Cadenas de Aisladores 1.3.4</h2>
+  <h2>Perfilado de Cadenas de Aisladores 1.3.5</h2>
   
   <form id="form-perfilado">
     
@@ -191,7 +191,7 @@
       </div>
     </div>
 
-    <!-- LÍNEA EN FILA INDIVIDUAL A ANCHO COMPLETO -->
+    <!-- LÍNEA EN FILA INDIVIDUAL -->
     <div class="form-group">
       <label for="linea">Línea de Alta Tensión (LAT)</label>
       <input type="text" id="linea" placeholder="Buscar línea..." required autocomplete="off">
@@ -336,29 +336,34 @@
   function obtenerModoMatriz(tipoApoyo) {
     if (!tipoApoyo) return "RD";
     
-    // Normalización de texto (elimina tildes y convierte a mayúsculas)
     const txt = tipoApoyo.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
-    // 1. Suspensión Simple -> Matriz SS (1 lado, 3 fases)
+    // Suspensión Simple -> Matriz SS (1 lado, 3 fases)
     if (txt.includes("SUSPENSION SIMPLE") || txt === "SS") {
       return "SS";
     }
 
-    // 2. Retención Doble / RD -> Matriz Completa (2 lados, 6 subfases)
-    const esRD = txt.includes("RETENCION DOBLE") || txt.includes("RETEN CION DOBLE") || txt === "RD";
+    // Retención Doble -> Matriz Completa RD (2 lados, 6 subfases)
+    const esRD = txt.includes("RETENCION DOBLE") || 
+                 txt.includes("RETENSION DOBLE") || 
+                 txt.includes("RETEN CION DOBLE") || 
+                 txt === "RD";
+
     if (esRD) {
       return "RD";
     }
 
-    // 3. Suspensión Doble / Retención Simple / RS / SD -> Matriz Reducida (2 lados, 3 fases)
+    // Suspensión Doble / Retención Simple -> Matriz Reducida SD_RS (2 lados, 3 fases)
     const esSD = txt.includes("SUSPENSION DOBLE") || txt === "SD";
-    const esRS = txt.includes("RETENCION SIMPLE") || txt.includes("RETEN CION SIMPLE") || txt === "RS" || txt.includes("RETENCION") || txt.includes("RETEN");
+    const esRS = txt.includes("RETENCION SIMPLE") || 
+                 txt.includes("RETENSION SIMPLE") || 
+                 txt.includes("RETEN CION SIMPLE") || 
+                 txt === "RS";
 
     if (esSD || esRS) {
       return "SD_RS";
     }
 
-    // Por defecto, si no coincide con ninguno, devuelve la matriz completa RD
     return "RD";
   }
 
@@ -420,7 +425,7 @@
       trSubfases.innerHTML = `<th>I</th><th>II</th><th>III</th><th>I</th><th>II</th><th>III</th>`;
       fasesA = ["I", "II", "III"];
       fasesB = ["I", "II", "III"];
-    } else { // RD (RETENCION DOBLE)
+    } else { // RD (RETENCION DOBLE) -> 6 subfases por lado
       groupLadoB.style.display = "block";
       trHeaderLados.innerHTML = `<th rowspan="2">Ais. N°</th><th colspan="6">${ladoANombre}</th><th colspan="6">${ladoBNombre}</th>`;
       trSubfases.innerHTML = `
@@ -659,7 +664,6 @@
       if (res.status === "success") {
         alert("✅ Mediciones registradas en la hoja: " + res.sheet);
         
-        // Conserva División, Responsable, Línea y Perfilador
         document.getElementById("piquete").value = "";
         document.getElementById("tipoApoyo").value = "";
         document.getElementById("obs-tierra").value = "";
