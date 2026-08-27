@@ -178,7 +178,7 @@
 <body>
 
 <div class="container">
-  <h2>Perfilado de Cadenas de Aisladores 1.3.6</h2>
+  <h2>Perfilado de Cadenas de Aisladores 1.4.0</h2>
   
   <form id="form-perfilado">
     
@@ -235,11 +235,11 @@
 
     <div class="grid-2" id="box-nombres-lados">
       <div class="form-group" id="group-lado-a">
-        <label for="lado-a">Nombre Lado A</label>
+        <label for="lado-a">Nombre Lado A <span id="req-lado-a"></span></label>
         <input type="text" id="lado-a" placeholder="Ej: Totoral" value="LADO A">
       </div>
       <div class="form-group" id="group-lado-b">
-        <label for="lado-b">Nombre Lado B</label>
+        <label for="lado-b">Nombre Lado B <span id="req-lado-b"></span></label>
         <input type="text" id="lado-b" placeholder="Ej: La Dormida" value="LADO B">
       </div>
     </div>
@@ -367,6 +367,12 @@
     return "RD";
   }
 
+  function esTipoRetencion(tipoApoyo) {
+    if (!tipoApoyo) return false;
+    const txt = tipoApoyo.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    return txt.includes("RETEN") || txt === "RD" || txt === "RS";
+  }
+
   function inicializarGrafico() {
     const ctx = document.getElementById('perfilChart').getContext('2d');
     chartInstance = new Chart(ctx, {
@@ -406,6 +412,19 @@
 
     const groupLadoB = document.getElementById("group-lado-b");
     const container = document.getElementById("matrices-container");
+
+    const reqA = document.getElementById("req-lado-a");
+    const reqB = document.getElementById("req-lado-b");
+
+    if (esTipoRetencion(tipoSeleccionado)) {
+      reqA.innerText = "*";
+      reqA.style.color = "red";
+      reqB.innerText = "*";
+      reqB.style.color = "red";
+    } else {
+      reqA.innerText = "";
+      reqB.innerText = "";
+    }
 
     const ladoANombre = document.getElementById("lado-a").value || "LADO A";
     const ladoBNombre = document.getElementById("lado-b").value || "LADO B";
@@ -506,7 +525,6 @@
       poblarFilasTabla("body-b", "B", fasesB, cant);
     }
 
-    // Actualizar las opciones del dropdown del Gráfico
     const selectCurva = document.getElementById("select-curva-fase");
     const valPrevio = selectCurva.value;
     selectCurva.innerHTML = "";
@@ -702,9 +720,27 @@
   function enviarFormulario(e) {
     e.preventDefault();
 
+    const tipoApoyoVal = document.getElementById("tipoApoyo").value;
+    const inputLadoA = document.getElementById("lado-a");
+    const inputLadoB = document.getElementById("lado-b");
+
+    // Validar obligación de LADO A y LADO B para RETENCIÓN
+    if (esTipoRetencion(tipoApoyoVal)) {
+      if (!inputLadoA.value.trim()) {
+        alert("⚠️ Por favor ingrese el nombre para LADO A (Obligatorio en Retención).");
+        inputLadoA.focus();
+        return;
+      }
+      if (!inputLadoB.value.trim()) {
+        alert("⚠️ Por favor ingrese el nombre para LADO B (Obligatorio en Retención).");
+        inputLadoB.focus();
+        return;
+      }
+    }
+
     const mediciones = [];
-    const ladoANombre = document.getElementById("lado-a").value || "LADO A";
-    const ladoBNombre = document.getElementById("lado-b").value || "LADO B";
+    const ladoANombre = inputLadoA.value.trim() || "LADO A";
+    const ladoBNombre = inputLadoB.value.trim() || "LADO B";
     const cantAisladoresVal = parseInt(document.getElementById("cant-aisladores").value) || 6;
 
     document.querySelectorAll(".cell-val").forEach(input => {
@@ -730,7 +766,7 @@
       linea: document.getElementById("linea").value,
       perfilador: document.getElementById("perfilador").value,
       piquete: document.getElementById("piquete").value,
-      tipoApoyo: document.getElementById("tipoApoyo").value,
+      tipoApoyo: tipoApoyoVal,
       cantAisladores: cantAisladoresVal,
       coordenadas: document.getElementById("coordenadas").value,
       ladoA: ladoANombre,
