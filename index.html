@@ -3,381 +3,860 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfilado de Líneas de Alta Tensión</title>
+  <title>Perfilado de Cadenas de Aisladores</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
-      --primary-color: #000080;
-      --secondary-color: #1a73e8;
-      --bg-color: #f4f6f9;
+      --primary: #0d6efd;
+      --bg: #f8f9fa;
       --card-bg: #ffffff;
-      --border-color: #dadce0;
-      --text-color: #202124;
+      --text: #212529;
+      --border: #ced4da;
     }
-
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
       margin: 0;
-      padding: 15px;
+      padding: 12px;
+      display: flex;
+      justify-content: center;
     }
-
     .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background-color: var(--card-bg);
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 750px;
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
     }
-
     h2 {
-      text-align: center;
-      color: var(--primary-color);
       margin-top: 0;
+      color: var(--primary);
+      text-align: center;
+      font-size: 1.3rem;
     }
-
     .section-title {
       font-weight: bold;
-      color: var(--primary-color);
-      border-bottom: 2px solid var(--primary-color);
-      padding-bottom: 5px;
-      margin-top: 20px;
-      margin-bottom: 15px;
-      font-size: 1.1em;
+      color: #495057;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 4px;
+      margin: 15px 0 10px 0;
+      font-size: 0.95rem;
     }
-
-    .form-group {
-      margin-bottom: 15px;
-    }
-
-    label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 5px;
-      font-size: 0.9em;
-    }
-
-    input[type="text"], select, textarea {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      box-sizing: border-box;
-      font-size: 1em;
-    }
-
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: var(--secondary-color);
-    }
-
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 15px;
+      gap: 10px;
     }
-
-    @media (max-width: 600px) {
-      .grid-2 {
-        grid-template-columns: 1fr;
-      }
+    .form-group {
+      margin-bottom: 12px;
+      position: relative;
     }
-
-    button {
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 600;
+      font-size: 0.82rem;
+    }
+    select, input {
       width: 100%;
-      padding: 12px;
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-size: 1.1em;
-      font-weight: bold;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      box-sizing: border-box;
+      font-size: 0.9rem;
+    }
+    .dropdown-card {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+    .dropdown-item {
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      border-bottom: 1px solid #f1f3f5;
       cursor: pointer;
-      margin-top: 20px;
-      transition: background-color 0.2s;
+      font-weight: 500;
     }
-
-    button:hover {
-      background-color: #000055;
+    .dropdown-item:hover {
+      background-color: #e7f1ff;
+      color: var(--primary);
     }
-
-    .table-container {
+    .table-responsive {
       overflow-x: auto;
-      margin-top: 15px;
+      margin-top: 10px;
     }
-
-    table {
+    
+    /* ESTILOS EXACTOS TIPO EXCEL EDICIÓN RECUADRO */
+    table.matrix {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.9em;
+      font-size: 0.8rem;
+      border: 2px solid #000000;
+      background-color: #ffffff;
+      margin-bottom: 15px;
     }
-
-    th, td {
-      border: 1px solid var(--border-color);
-      padding: 8px;
+    table.matrix th, table.matrix td {
+      border: 1px solid #000000;
+      padding: 2px 1px;
       text-align: center;
     }
-
-    th {
-      background-color: var(--primary-color);
-      color: white;
+    /* ENCABEZADO AZUL */
+    table.matrix th.header-blue {
+      background-color: #000080;
+      color: #ffffff;
+      font-weight: bold;
+      font-size: 0.75rem;
+      padding: 6px 2px;
+    }
+    /* FILA Y COLUMNA AMARILLA */
+    .bg-yellow {
+      background-color: #ffff00 !important;
+      font-weight: bold;
+      color: #000000;
+    }
+    .border-divider {
+      border-right: 2px solid #000000 !important;
+    }
+    table.matrix input {
+      width: 100%;
+      padding: 5px 2px;
+      text-align: center;
+      font-size: 0.85rem;
+      border: none;
+      background: transparent;
+      box-sizing: border-box;
+    }
+    table.matrix input:focus {
+      outline: 2px solid var(--primary);
+      background-color: #e7f1ff;
     }
 
-    .sub-header {
-      background-color: #ffff00;
-      color: #000;
+    .chart-container {
+      background: #f1f5f9;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 15px;
+      border: 1px solid #cbd5e1;
+    }
+    .btn-submit {
+      width: 100%;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    .btn-sync {
+      background-color: #6c757d;
+      color: white;
+      border: none;
+      padding: 8px;
+      width: 100%;
+      border-radius: 5px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .status-message {
+      text-align: center;
+      margin-top: 8px;
+      font-size: 0.85rem;
       font-weight: bold;
     }
-
-    /* Modal / Alert Loading */
-    .overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-      color: white;
-      font-size: 1.2em;
+    .gps-info {
+      font-size: 0.78rem;
+      color: #6c757d;
+      margin-top: 2px;
     }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>Carga de Datos de Perfilado</h2>
-
-  <form id="perfiladoForm">
-    <!-- 1. Identificación y Ubicación -->
-    <div class="section-title">1. Identificación y Ubicación</div>
+  <h2>Perfilado de Cadenas de Aisladores</h2>
+  
+  <form id="form-perfilado">
     
+    <!-- 1. DATOS DE CABECERA -->
+    <div class="section-title">1. Datos de Cabecera</div>
+    
+    <div class="grid-2">
+      <div class="form-group">
+        <label for="division">División</label>
+        <select id="division" required>
+          <option value="">Seleccione...</option>
+          <option value="Cordoba">Córdoba</option>
+          <option value="Reolin">Reolin</option>
+          <option value="Isla Verde">Isla Verde</option>
+          <option value="Levalle">Levalle</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="responsable">Jefe de Trabajo / Resp.</label>
+        <select id="responsable" required><option value="">Seleccione División...</option></select>
+      </div>
+    </div>
+
     <div class="form-group">
-      <label for="linea">Línea de Alta Tensión</label>
-      <select id="linea" required onchange="actualizarResponsables()">
-        <option value="">Cargando líneas...</option>
+      <label for="linea">Línea de Alta Tensión (LAT)</label>
+      <input type="text" id="linea" placeholder="Buscar línea..." required autocomplete="off">
+      <div id="lineas-dropdown" class="dropdown-card"></div>
+    </div>
+
+    <div class="form-group">
+      <label for="perfilador">Perfilador / Marca Equipo</label>
+      <input type="text" id="perfilador" placeholder="Ej: TEREX" required>
+    </div>
+
+    <div class="form-group">
+      <label>Ubicación GPS</label>
+      <input type="text" id="coordenadas" readonly placeholder="Obteniendo GPS...">
+      <div class="gps-info" id="gps-status">Solicitando permiso de GPS...</div>
+    </div>
+
+    <div class="form-group">
+      <label for="piquete">Piquete / Apoyo N°</label>
+      <input type="text" id="piquete" placeholder="Ej: 19" required>
+    </div>
+
+    <div class="form-group">
+      <label for="tipoApoyo">Tipo de Apoyo / Cadena</label>
+      <select id="tipoApoyo" required><option value="">Seleccione...</option></select>
+    </div>
+
+    <!-- 2. PLANILLA DE LECTURAS REGISTRADAS -->
+    <div class="section-title">2. Planilla de Lecturas Registradas</div>
+
+    <div class="grid-2" id="box-nombres-lados">
+      <div class="form-group" id="group-lado-a">
+        <label for="lado-a">Nombre Lado A <span id="req-lado-a"></span></label>
+        <input type="text" id="lado-a" placeholder="Ej: LADO A" value="LADO A">
+      </div>
+      <div class="form-group" id="group-lado-b">
+        <label for="lado-b">Nombre Lado B <span id="req-lado-b"></span></label>
+        <input type="text" id="lado-b" placeholder="Ej: LADO B" value="LADO B">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="cant-aisladores">Cant. Aisladores por Cadena (5 al 14)</label>
+      <select id="cant-aisladores">
+        <option value="5">5 Aisladores</option>
+        <option value="6" selected>6 Aisladores</option>
+        <option value="7">7 Aisladores</option>
+        <option value="8">8 Aisladores</option>
+        <option value="9">9 Aisladores</option>
+        <option value="10">10 Aisladores</option>
+        <option value="11">11 Aisladores</option>
+        <option value="12">12 Aisladores</option>
+        <option value="13">13 Aisladores</option>
+        <option value="14">14 Aisladores</option>
       </select>
     </div>
 
-    <div class="grid-2">
-      <div class="form-group">
-        <label for="piquete">Piquete N°</label>
-        <input type="text" id="piquete" placeholder="Ej: 19" required>
-      </div>
+    <!-- CONTENEDOR DINÁMICO DE MATRICES -->
+    <div id="matrices-container"></div>
 
+    <!-- 3. GRÁFICO EN TIEMPO REAL -->
+    <div class="section-title">3. Curva de Perfilado en Tiempo Real</div>
+    <div class="chart-container">
       <div class="form-group">
-        <label for="coordenadas">Coordenadas GPS</label>
-        <input type="text" id="coordenadas" placeholder="-31.1234, -64.1234">
+        <label for="select-curva-fase">Ver Curva de:</label>
+        <select id="select-curva-fase"></select>
       </div>
+      <canvas id="perfilChart" height="200"></canvas>
     </div>
 
-    <div class="grid-2">
-      <div class="form-group">
-        <label for="tipoApoyo">Tipo de Apoyo</label>
-        <select id="tipoApoyo" required>
-          <option value="">Cargando tipos de apoyo...</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="perfilador">Perfilador / Inspector</label>
-        <select id="perfilador" required>
-          <option value="">Seleccione línea primero</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- 2. Configuración de Cadena -->
-    <div class="section-title">2. Configuración de Cadena</div>
-    
-    <div class="grid-2">
-      <div class="form-group">
-        <label for="cantAisladores">Cantidad de Aisladores</label>
-        <input type="number" id="cantAisladores" value="6" min="1" max="30" onchange="generarTablaMediciones()" required>
-      </div>
-      <div class="form-group">
-        <label for="ladoA">Nombre Lado A</label>
-        <input type="text" id="ladoA" value="LADO A" onchange="actualizarCabeceraTabla()">
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label for="ladoB">Nombre Lado B</label>
-      <input type="text" id="ladoB" value="LADO B" onchange="actualizarCabeceraTabla()">
-    </div>
-
-    <!-- 3. Mediciones por Aislador -->
-    <div class="section-title">3. Mediciones kV por Aislador</div>
-    <div class="table-container">
-      <table id="tablaMediciones">
-        <thead>
-          <tr id="rowLados">
-            <th>N° Aislador</th>
-            <th colspan="6" id="thLadoA" class="sub-header">LADO A</th>
-            <th colspan="6" id="thLadoB" class="sub-header">LADO B</th>
-          </tr>
-          <tr>
-            <th>#</th>
-            <th>F1 Ext</th><th>F1 Int</th><th>F2 Ext</th><th>F2 Int</th><th>F3 Ext</th><th>F3 Int</th>
-            <th>F1 Ext</th><th>F1 Int</th><th>F2 Ext</th><th>F2 Int</th><th>F3 Ext</th><th>F3 Int</th>
-          </tr>
-        </thead>
-        <tbody id="tbodyMediciones">
-          <!-- Se genera dinámicamente -->
-        </tbody>
-      </table>
-    </div>
-
-    <!-- 4. Estado General y Observaciones -->
+    <!-- 4. ESTADO GENERAL Y OBSERVACIONES -->
     <div class="section-title">4. Estado General y Observaciones</div>
 
     <div class="form-group">
-      <label for="observacionesGenerales">Observaciones Generales</label>
-      <input type="text" id="observacionesGenerales" placeholder="Detalles adicionales">
+      <label for="obs-tierra">Estado Tomas de Tierra</label>
+      <input type="text" id="obs-tierra" placeholder="Normal / Regular / Dañado">
+    </div>
+    <div class="form-group">
+      <label for="obs-aisladores">Estado de los Aisladores</label>
+      <input type="text" id="obs-aisladores" placeholder="Observaciones físicas del plato/cadena">
+    </div>
+    <div class="form-group">
+      <label for="observaciones">Observaciones Generales</label>
+      <input type="text" id="observaciones" placeholder="Detalles adicionales">
     </div>
 
-    <button type="submit" id="btnSubmit">Enviar Datos a Google Sheets</button>
+    <button type="submit" class="btn-submit" id="btn-guardar">Guardar y Sincronizar</button>
   </form>
+
+  <button type="button" id="btn-force-sync" class="btn-sync">🔄 Forzar Sincronización de Catálogos</button>
+  <div id="sync-status" class="status-message"></div>
 </div>
 
-<div class="overlay" id="loadingOverlay">Enviando datos... Por favor espere.</div>
-
 <script>
-  // URL de la Web App desplegada en Google Apps Script
-  const SCRIPT_URL = "URL_DE_TU_WEB_APP_AQUI"; 
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZneJSFTp4FZOrGP4AlYOjgLqV_odof8KmiYscquPDo9GYzrRMVNpLTkz4KF3-YxLk/exec";
+  let catalogosGuardados = { lineas: [], responsables: {}, tiposApoyo: [] };
+  let chartInstance = null;
 
-  let datosIniciales = {};
+  document.addEventListener("DOMContentLoaded", () => {
+    obtenerUbicacionGPS();
+    inicializarGrafico();
+    actualizarEstructuraMatriz();
+    cargarDatosDesdeCache();
+    setupEvents();
+    sincronizarCatalogos();
+  });
 
-  window.onload = function() {
-    cargarCatalogos();
-    generarTablaMediciones();
-  };
+  function obtenerUbicacionGPS() {
+    const inputGps = document.getElementById("coordenadas");
+    const statusGps = document.getElementById("gps-status");
 
-  function cargarCatalogos() {
-    fetch(SCRIPT_URL)
-      .then(response => response.json())
-      .then(res => {
-        if(res.status === "success") {
-          datosIniciales = res.data;
-          
-          // Poblar Líneas
-          const selectLinea = document.getElementById("linea");
-          selectLinea.innerHTML = '<option value="">Seleccione una línea</option>';
-          datosIniciales.lineas.forEach(l => {
-            selectLinea.innerHTML += `<option value="${l}">${l}</option>`;
-          });
-
-          // Poblar Tipos de Apoyo
-          const selectTipo = document.getElementById("tipoApoyo");
-          selectTipo.innerHTML = '<option value="">Seleccione tipo</option>';
-          datosIniciales.tiposApoyo.forEach(t => {
-            selectTipo.innerHTML += `<option value="${t}">${t}</option>`;
-          });
-        }
-      })
-      .catch(err => console.error("Error al cargar datos:", err));
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude.toFixed(6);
+          const lng = pos.coords.longitude.toFixed(6);
+          inputGps.value = `${lat}, ${lng}`;
+          statusGps.innerText = "📍 GPS obtenido correctamente.";
+          statusGps.style.color = "#198754";
+        },
+        (err) => {
+          inputGps.value = "Sin GPS";
+          statusGps.innerText = "⚠️ No se obtuvo GPS: " + err.message;
+          statusGps.style.color = "#dc3545";
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      inputGps.value = "No soportado";
+      statusGps.innerText = "❌ Geolocalización no soportada.";
+    }
   }
 
-  function actualizarResponsables() {
-    const linea = document.getElementById("linea").value;
-    const selectPerfilador = document.getElementById("perfilador");
-    selectPerfilador.innerHTML = '<option value="">Seleccione inspector</option>';
+  function obtenerModoMatriz(tipoApoyo) {
+    if (!tipoApoyo) return "RD";
+    
+    const txt = tipoApoyo.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
-    let sector = "Cordoba"; // Por defecto
-    if(linea.includes("REOLIN")) sector = "Reolin";
-    else if(linea.includes("ISLA VERDE")) sector = "Isla Verde";
-    else if(linea.includes("LEVALLE")) sector = "Levalle";
+    if (txt.includes("SUSPENSION SIMPLE") || txt === "SS") {
+      return "SS";
+    }
 
-    const lista = datosIniciales.responsables ? datosIniciales.responsables[sector] || [] : [];
-    lista.forEach(r => {
-      selectPerfilador.innerHTML += `<option value="${r}">${r}</option>`;
+    const esRD = txt.includes("RETENCION DOBLE") || 
+                 txt.includes("RETENSION DOBLE") || 
+                 txt.includes("RETEN CION DOBLE") || 
+                 txt === "RD";
+
+    if (esRD) {
+      return "RD";
+    }
+
+    const esSD = txt.includes("SUSPENSION DOBLE") || txt === "SD";
+    const esRS = txt.includes("RETENCION SIMPLE") || 
+                 txt.includes("RETENSION SIMPLE") || 
+                 txt.includes("RETEN CION SIMPLE") || 
+                 txt === "RS";
+
+    if (esSD || esRS) {
+      return "SD_RS";
+    }
+
+    return "RD";
+  }
+
+  function esTipoRetencion(tipoApoyo) {
+    if (!tipoApoyo) return false;
+    const txt = tipoApoyo.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    return txt.includes("RETEN") || txt === "RD" || txt === "RS";
+  }
+
+  function inicializarGrafico() {
+    const ctx = document.getElementById('perfilChart').getContext('2d');
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [1, 2, 3, 4, 5, 6],
+        datasets: [{
+          label: 'Resultado Perfilado',
+          data: [],
+          borderColor: '#0d6efd',
+          backgroundColor: '#0d6efd',
+          tension: 0.3,
+          borderWidth: 3,
+          pointRadius: 5
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          x: {
+            title: { display: true, text: 'Aislador N°' },
+            type: 'linear',
+            min: 0.5,
+            max: 6.5,
+            offset: false,
+            ticks: {
+              stepSize: 1,
+              precision: 0
+            }
+          },
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: 'Resultado (kV / Valor)' }
+          }
+        }
+      }
     });
   }
 
-  function actualizarCabeceraTabla() {
-    document.getElementById("thLadoA").innerText = document.getElementById("ladoA").value || "LADO A";
-    document.getElementById("thLadoB").innerText = document.getElementById("ladoB").value || "LADO B";
+  function actualizarEstructuraMatriz() {
+    const cant = parseInt(document.getElementById("cant-aisladores").value) || 6;
+    const tipoSeleccionado = document.getElementById("tipoApoyo").value;
+    const modo = obtenerModoMatriz(tipoSeleccionado);
+
+    const groupLadoB = document.getElementById("group-lado-b");
+    const container = document.getElementById("matrices-container");
+
+    const reqA = document.getElementById("req-lado-a");
+    const reqB = document.getElementById("req-lado-b");
+
+    if (esTipoRetencion(tipoSeleccionado)) {
+      reqA.innerText = "*";
+      reqA.style.color = "red";
+      reqB.innerText = "*";
+      reqB.style.color = "red";
+    } else {
+      reqA.innerText = "";
+      reqB.innerText = "";
+    }
+
+    const ladoANombre = document.getElementById("lado-a").value || "LADO A";
+    const ladoBNombre = document.getElementById("lado-b").value || "LADO B";
+
+    let fasesA = [];
+    let fasesB = [];
+
+    container.innerHTML = "";
+
+    if (modo === "SS") {
+      groupLadoB.style.display = "none";
+      fasesA = ["F1 Externa", "F2 Externa", "F3 Externa"];
+
+      container.innerHTML = `
+        <div class="table-responsive">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th class="header-blue">N° AISLADOR</th>
+                <th class="header-blue">F1 Externa</th>
+                <th class="header-blue">F2 Externa</th>
+                <th class="header-blue">F3 Externa</th>
+              </tr>
+              <tr>
+                <th class="bg-yellow"></th>
+                <th colspan="3" class="bg-yellow">${ladoANombre}</th>
+              </tr>
+            </thead>
+            <tbody id="body-a"></tbody>
+          </table>
+        </div>
+      `;
+
+      poblarFilasTablaSimple("body-a", "A", fasesA, cant);
+
+    } else if (modo === "SD_RS") {
+      groupLadoB.style.display = "block";
+      fasesA = ["F1 Externa", "F2 Externa", "F3 Externa"];
+      fasesB = ["F1 Externa", "F2 Externa", "F3 Externa"];
+
+      container.innerHTML = `
+        <div class="table-responsive">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th class="header-blue">N° AISLADOR</th>
+                <th class="header-blue">F1 Externa</th>
+                <th class="header-blue">F2 Externa</th>
+                <th class="header-blue border-divider">F3 Externa</th>
+                <th class="header-blue">F1 Externa</th>
+                <th class="header-blue">F2 Externa</th>
+                <th class="header-blue">F3 Externa</th>
+              </tr>
+              <tr>
+                <th class="bg-yellow"></th>
+                <th colspan="3" class="bg-yellow border-divider">${ladoANombre}</th>
+                <th colspan="3" class="bg-yellow">${ladoBNombre}</th>
+              </tr>
+            </thead>
+            <tbody id="body-combinado"></tbody>
+          </table>
+        </div>
+      `;
+
+      poblarFilasTablaCombinada("body-combinado", fasesA, fasesB, cant);
+
+    } else { 
+      // RETENCION DOBLE (RD): Tablas apiladas (Lado A arriba, Lado B debajo)
+      groupLadoB.style.display = "block";
+      fasesA = ["F1 Externa", "F1 Interna", "F2 Externa", "F2 Interna", "F3 Externa", "F3 Interna"];
+      fasesB = ["F1 Externa", "F1 Interna", "F2 Externa", "F2 Interna", "F3 Externa", "F3 Interna"];
+
+      container.innerHTML = `
+        <!-- TABLA LADO A -->
+        <div class="table-responsive">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th class="header-blue">N° AISLADOR</th>
+                <th class="header-blue">F1 Externa</th>
+                <th class="header-blue">F1 Interna</th>
+                <th class="header-blue">F2 Externa</th>
+                <th class="header-blue">F2 Interna</th>
+                <th class="header-blue">F3 Externa</th>
+                <th class="header-blue">F3 Interna</th>
+              </tr>
+              <tr>
+                <th class="bg-yellow"></th>
+                <th colspan="6" class="bg-yellow">${ladoANombre}</th>
+              </tr>
+            </thead>
+            <tbody id="body-lado-a"></tbody>
+          </table>
+        </div>
+
+        <!-- TABLA LADO B -->
+        <div class="table-responsive">
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th class="header-blue">N° AISLADOR</th>
+                <th class="header-blue">F1 Externa</th>
+                <th class="header-blue">F1 Interna</th>
+                <th class="header-blue">F2 Externa</th>
+                <th class="header-blue">F2 Interna</th>
+                <th class="header-blue">F3 Externa</th>
+                <th class="header-blue">F3 Interna</th>
+              </tr>
+              <tr>
+                <th class="bg-yellow"></th>
+                <th colspan="6" class="bg-yellow">${ladoBNombre}</th>
+              </tr>
+            </thead>
+            <tbody id="body-lado-b"></tbody>
+          </table>
+        </div>
+      `;
+
+      poblarFilasTablaSimple("body-lado-a", "A", fasesA, cant);
+      poblarFilasTablaSimple("body-lado-b", "B", fasesB, cant);
+    }
+
+    const selectCurva = document.getElementById("select-curva-fase");
+    const valPrevio = selectCurva.value;
+    selectCurva.innerHTML = "";
+    
+    fasesA.forEach(f => selectCurva.innerHTML += `<option value="A_${f}">${ladoANombre} - ${f}</option>`);
+    fasesB.forEach(f => selectCurva.innerHTML += `<option value="B_${f}">${ladoBNombre} - ${f}</option>`);
+
+    if (valPrevio) selectCurva.value = valPrevio;
+
+    actualizarGrafico();
   }
 
-  function generarTablaMediciones() {
-    const cant = parseInt(document.getElementById("cantAisladores").value) || 6;
-    const tbody = document.getElementById("tbodyMediciones");
-    tbody.innerHTML = "";
+  function poblarFilasTablaSimple(tbodyId, ladoKey, fases, cant) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
 
     for (let i = 1; i <= cant; i++) {
-      let tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td style="background-color: #ffff00; font-weight: bold;">${i}</td>
-        <td><input type="number" step="0.1" class="med-input" data-aislador="${i}" data-lado="A" data-fase="F1 Externa"></td>
-        <td><input type="number" step="0.1" class="med-input" data-aislador="${i}" data-lado="A" data-fase="F1 Interna"></td>
-        <td><input type="number" step="0.1" class="med-input" data-aislador="${i}" data-lado="A" data-fase="F2 Externa"></td>
-        <td><input type="number" step="0.1" class="med-input" data-aislador="${i}" data-lado="A" data-fase="F2 Interna"></td>
-        <td><input type="number" step="0.1" class="med-input" data-aislador="${i}" data-lado="A" data-fase="F3 Externa"></td>
-        <td><input type="number" step="0.1" class="med-input" data-aislador="${i}" data-lado="A" data-fase="F3 Interna"></td>
-        <td><input type="number" step="0.1" class="med-input" data-aislador="${i}" data-lado="B" data-fase="F1 Externa"></td>
-        <td><input type="number" step="0.1" class="med-input" data-aislador="${i}" data-lado="B" data-fase="F1 Interna"></td>
-        <td><input type="number" step="0.1" class="med-input" data-aislador="${i}" data-lado="B" data-fase="F2 Externa"></td>
-        <td><input type="number" step="0.1" class="med-input" data-aislador="${i}" data-lado="B" data-fase="F2 Interna"></td>
-        <td><input type="number" step="0.1" class="med-input" data-aislador="${i}" data-lado="B" data-fase="F3 Externa"></td>
-        <td><input type="number" step="0.1" class="med-input" data-aislador="${i}" data-lado="B" data-fase="F3 Interna"></td>
-      `;
+      const tr = document.createElement("tr");
+      let html = `<td class="bg-yellow">${i}</td>`;
+
+      fases.forEach(fase => {
+        html += `<td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="${ladoKey}" data-fase="${fase}"></td>`;
+      });
+
+      tr.innerHTML = html;
       tbody.appendChild(tr);
     }
   }
 
-  document.getElementById("perfiladoForm").addEventListener("submit", function(e) {
-    e.preventDefault();
-    document.getElementById("loadingOverlay").style.display = "flex";
+  function poblarFilasTablaCombinada(tbodyId, fasesA, fasesB, cant) {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
 
-    const ladoA = document.getElementById("ladoA").value || "LADO A";
-    const ladoB = document.getElementById("ladoB").value || "LADO B";
+    for (let i = 1; i <= cant; i++) {
+      const tr = document.createElement("tr");
+      let html = `<td class="bg-yellow">${i}</td>`;
+
+      // LADO A
+      fasesA.forEach((fase, index) => {
+        const isLast = index === fasesA.length - 1;
+        const dividerClass = isLast ? 'border-divider' : '';
+        html += `<td class="${dividerClass}"><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="A" data-fase="${fase}"></td>`;
+      });
+
+      // LADO B
+      fasesB.forEach(fase => {
+        html += `<td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="B" data-fase="${fase}"></td>`;
+      });
+
+      tr.innerHTML = html;
+      tbody.appendChild(tr);
+    }
+  }
+
+  function actualizarGrafico() {
+    if (!chartInstance) return;
+
+    const cant = parseInt(document.getElementById("cant-aisladores").value) || 6;
+    const opcionCurva = document.getElementById("select-curva-fase").value;
+    if (!opcionCurva) return;
+
+    const [ladoSel, faseSel] = opcionCurva.split("_");
+
+    let points = [];
+    let labels = [];
+
+    for (let i = 1; i <= cant; i++) {
+      labels.push(i);
+      const input = document.querySelector(`.cell-val[data-num="${i}"][data-lado="${ladoSel}"][data-fase="${faseSel}"]`);
+      if (input && input.value !== "") {
+        points.push({ x: i, y: parseFloat(input.value) });
+      }
+    }
+
+    chartInstance.options.scales.x.min = 0.5;
+    chartInstance.options.scales.x.max = cant + 0.5;
+
+    chartInstance.data.labels = labels;
+    chartInstance.data.datasets[0].data = points;
+    chartInstance.update();
+  }
+
+  function renderLineaDropdown(query = "") {
+    const dropdown = document.getElementById("lineas-dropdown");
+    dropdown.innerHTML = "";
+    
+    if (!catalogosGuardados.lineas) return;
+
+    const filtradas = catalogosGuardados.lineas.filter(l => 
+      l.toLowerCase().includes(query.toLowerCase())
+    );
+
+    if (filtradas.length === 0) {
+      dropdown.style.display = "none";
+      return;
+    }
+
+    filtradas.forEach(lineaText => {
+      const item = document.createElement("div");
+      item.className = "dropdown-item";
+      item.textContent = lineaText;
+      item.addEventListener("click", () => {
+        document.getElementById("linea").value = lineaText;
+        dropdown.style.display = "none";
+      });
+      dropdown.appendChild(item);
+    });
+
+    dropdown.style.display = "block";
+  }
+
+  function setupEvents() {
+    const inputLinea = document.getElementById("linea");
+    const dropdownLinea = document.getElementById("lineas-dropdown");
+
+    inputLinea.addEventListener("focus", () => renderLineaDropdown(inputLinea.value));
+    inputLinea.addEventListener("input", () => renderLineaDropdown(inputLinea.value));
+
+    document.addEventListener("click", (e) => {
+      if (!inputLinea.contains(e.target) && !dropdownLinea.contains(e.target)) {
+        dropdownLinea.style.display = "none";
+      }
+    });
+
+    document.getElementById("cant-aisladores").addEventListener("change", actualizarEstructuraMatriz);
+    document.getElementById("tipoApoyo").addEventListener("change", actualizarEstructuraMatriz);
+    document.getElementById("select-curva-fase").addEventListener("change", actualizarGrafico);
+
+    document.getElementById("matrices-container").addEventListener("input", (e) => {
+      if (e.target.classList.contains("cell-val")) {
+        actualizarGrafico();
+      }
+    });
+
+    document.getElementById("lado-a").addEventListener("input", actualizarEstructuraMatriz);
+    document.getElementById("lado-b").addEventListener("input", actualizarEstructuraMatriz);
+
+    document.getElementById("division").addEventListener("change", function() {
+      const respSelect = document.getElementById("responsable");
+      respSelect.innerHTML = '<option value="">Seleccione...</option>';
+      if (this.value && catalogosGuardados.responsables && catalogosGuardados.responsables[this.value]) {
+        catalogosGuardados.responsables[this.value].forEach(r => {
+          respSelect.innerHTML += `<option value="${r}">${r}</option>`;
+        });
+      }
+    });
+
+    document.getElementById("btn-force-sync").addEventListener("click", sincronizarCatalogos);
+    document.getElementById("form-perfilado").addEventListener("submit", enviarFormulario);
+  }
+
+  function cargarDatosDesdeCache() {
+    const local = localStorage.getItem("catalogos_pwa");
+    if (local) {
+      catalogosGuardados = JSON.parse(local);
+      poblarCatalogos(catalogosGuardados);
+    }
+  }
+
+  function poblarCatalogos(data) {
+    const selTipo = document.getElementById("tipoApoyo");
+    selTipo.innerHTML = '<option value="">Seleccione...</option>';
+    if (data.tiposApoyo) {
+      data.tiposApoyo.forEach(t => selTipo.innerHTML += `<option value="${t}">${t}</option>`);
+    }
+
+    const divisionVal = document.getElementById("division").value;
+    if (divisionVal && data.responsables && data.responsables[divisionVal]) {
+      const respSelect = document.getElementById("responsable");
+      respSelect.innerHTML = '<option value="">Seleccione...</option>';
+      data.responsables[divisionVal].forEach(r => {
+        respSelect.innerHTML += `<option value="${r}">${r}</option>`;
+      });
+    }
+  }
+
+  function sincronizarCatalogos() {
+    const btn = document.getElementById("btn-force-sync");
+    btn.disabled = true;
+    btn.innerText = "⏳ Sincronizando...";
+
+    fetch(`${SCRIPT_URL}?nocache=${new Date().getTime()}`)
+      .then(r => r.json())
+      .then(res => {
+        if (res.status === "success") {
+          catalogosGuardados = res.data;
+          localStorage.setItem("catalogos_pwa", JSON.stringify(res.data));
+          poblarCatalogos(res.data);
+          document.getElementById("sync-status").innerText = "✅ Catálogos sincronizados.";
+        }
+      })
+      .catch(() => document.getElementById("sync-status").innerText = "❌ Error al sincronizar.")
+      .finally(() => {
+        btn.disabled = false;
+        btn.innerText = "🔄 Forzar Sincronización de Catálogos";
+      });
+  }
+
+  function enviarFormulario(e) {
+    e.preventDefault();
+
+    const tipoApoyoVal = document.getElementById("tipoApoyo").value;
+    const inputLadoA = document.getElementById("lado-a");
+    const inputLadoB = document.getElementById("lado-b");
+
+    if (esTipoRetencion(tipoApoyoVal)) {
+      if (!inputLadoA.value.trim()) {
+        alert("⚠️ Por favor ingrese el nombre para LADO A (Obligatorio en Retención).");
+        inputLadoA.focus();
+        return;
+      }
+      if (!inputLadoB.value.trim()) {
+        alert("⚠️ Por favor ingrese el nombre para LADO B (Obligatorio en Retención).");
+        inputLadoB.focus();
+        return;
+      }
+    }
 
     const mediciones = [];
-    document.querySelectorAll(".med-input").forEach(input => {
-      if(input.value !== "") {
-        const ladoKey = input.getAttribute("data-lado");
+    const ladoANombre = inputLadoA.value.trim() || "LADO A";
+    const ladoBNombre = inputLadoB.value.trim() || "LADO B";
+    const cantAisladoresVal = parseInt(document.getElementById("cant-aisladores").value) || 6;
+
+    document.querySelectorAll(".cell-val").forEach(input => {
+      if (input.value !== "") {
         mediciones.push({
-          numAislador: input.getAttribute("data-aislador"),
-          ladoKey: ladoKey,
-          lado: ladoKey === "A" ? ladoA : ladoB,
-          fase: input.getAttribute("data-fase"),
+          lado: input.dataset.lado === "A" ? ladoANombre : ladoBNombre,
+          ladoKey: input.dataset.lado,
+          fase: input.dataset.fase,
+          numAislador: input.dataset.num,
           valor: input.value
         });
       }
     });
 
+    if (mediciones.length === 0) {
+      alert("Ingrese al menos un valor numérico en la matriz.");
+      return;
+    }
+
     const payload = {
+      division: document.getElementById("division").value,
+      responsable: document.getElementById("responsable").value,
       linea: document.getElementById("linea").value,
-      piquete: document.getElementById("piquete").value,
-      coordenadas: document.getElementById("coordenadas").value,
-      tipoApoyo: document.getElementById("tipoApoyo").value,
       perfilador: document.getElementById("perfilador").value,
-      cantAisladores: document.getElementById("cantAisladores").value,
-      ladoA: ladoA,
-      ladoB: ladoB,
-      mediciones: mediciones,
-      observacionesGenerales: document.getElementById("observacionesGenerales").value || ""
+      piquete: document.getElementById("piquete").value,
+      tipoApoyo: tipoApoyoVal,
+      cantAisladores: cantAisladoresVal,
+      coordenadas: document.getElementById("coordenadas").value,
+      ladoA: ladoANombre,
+      ladoB: ladoBNombre,
+      obsTierra: document.getElementById("obs-tierra").value,
+      obsAisladores: document.getElementById("obs-aisladores").value,
+      observaciones: document.getElementById("observaciones").value,
+      mediciones: mediciones
     };
+
+    const btnGuardar = document.getElementById("btn-guardar");
+    btnGuardar.disabled = true;
+    btnGuardar.innerText = "Guardando...";
 
     fetch(SCRIPT_URL, {
       method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     })
-    .then(() => {
-      document.getElementById("loadingOverlay").style.display = "none";
-      alert("¡Datos guardados con éxito en la planilla!");
-      document.getElementById("perfiladoForm").reset();
-      generarTablaMediciones();
-    })
-    .catch(err => {
-      document.getElementById("loadingOverlay").style.display = "none";
-      alert("Error al guardar: " + err);
-    });
-  });
-</script>
+    .then(r => r.json())
+    .then(res => {
+      if (res.status === "success") {
+        alert("✅ Mediciones registradas en la hoja: " + res.sheet);
+        
+        document.getElementById("piquete").value = "";
+        document.getElementById("tipoApoyo").value = "";
+        document.getElementById("obs-tierra").value = "";
+        document.getElementById("obs-aisladores").value = "";
+        document.getElementById("observaciones").value = "";
 
+        actualizarEstructuraMatriz();
+        obtenerUbicacionGPS();
+      } else {
+        alert("Error: " + res.message);
+      }
+    })
+    .catch(() => alert("❌ Error de red al intentar guardar."))
+    .finally(() => {
+      btnGuardar.disabled = false;
+      btnGuardar.innerText = "Guardar y Sincronizar";
+    });
+  }
+</script>
 </body>
 </html>
