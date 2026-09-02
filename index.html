@@ -287,14 +287,6 @@
     <div class="section-title">4. Estado General y Observaciones</div>
 
     <div class="form-group">
-      <label for="obs-tierra">Estado Tomas de Tierra</label>
-      <input type="text" id="obs-tierra" placeholder="Normal / Regular / Dañado">
-    </div>
-    <div class="form-group">
-      <label for="obs-aisladores">Estado de los Aisladores</label>
-      <input type="text" id="obs-aisladores" placeholder="Observaciones físicas del plato/cadena">
-    </div>
-    <div class="form-group">
       <label for="observaciones">Observaciones Generales</label>
       <input type="text" id="observaciones" placeholder="Detalles adicionales">
     </div>
@@ -820,9 +812,7 @@
       coordenadas: document.getElementById("coordenadas").value,
       ladoA: ladoANombre,
       ladoB: ladoBNombre,
-      obsTierra: document.getElementById("obs-tierra").value,
-      obsAisladores: document.getElementById("obs-aisladores").value,
-      observaciones: document.getElementById("observaciones").value,
+      observacionesGenerales: document.getElementById("observaciones").value,
       mediciones: mediciones
     };
 
@@ -841,8 +831,6 @@
         
         document.getElementById("piquete").value = "";
         document.getElementById("tipoApoyo").value = "";
-        document.getElementById("obs-tierra").value = "";
-        document.getElementById("obs-aisladores").value = "";
         document.getElementById("observaciones").value = "";
 
         actualizarEstructuraMatriz();
