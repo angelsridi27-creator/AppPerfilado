@@ -96,8 +96,6 @@
       overflow-x: auto;
       margin-top: 10px;
     }
-    
-    /* ESTILOS EXACTOS TIPO EXCEL EDICIÓN RECUADRO */
     table.matrix {
       width: 100%;
       border-collapse: collapse;
@@ -111,7 +109,6 @@
       padding: 2px 1px;
       text-align: center;
     }
-    /* ENCABEZADO AZUL */
     table.matrix th.header-blue {
       background-color: #000080;
       color: #ffffff;
@@ -119,7 +116,6 @@
       font-size: 0.75rem;
       padding: 6px 2px;
     }
-    /* FILA Y COLUMNA AMARILLA */
     .bg-yellow {
       background-color: #ffff00 !important;
       font-weight: bold;
@@ -141,7 +137,6 @@
       outline: 2px solid var(--primary);
       background-color: #e7f1ff;
     }
-
     .chart-container {
       background: #f1f5f9;
       padding: 12px;
@@ -192,8 +187,6 @@
   <h2>Perfilado de Cadenas de Aisladores</h2>
   
   <form id="form-perfilado">
-    
-    <!-- 1. DATOS DE CABECERA -->
     <div class="section-title">1. Datos de Cabecera</div>
     
     <div class="grid-2">
@@ -240,7 +233,6 @@
       <select id="tipoApoyo" required><option value="">Seleccione...</option></select>
     </div>
 
-    <!-- 2. PLANILLA DE LECTURAS REGISTRADAS -->
     <div class="section-title">2. Planilla de Lecturas Registradas</div>
 
     <div class="grid-2" id="box-nombres-lados">
@@ -270,10 +262,8 @@
       </select>
     </div>
 
-    <!-- CONTENEDOR DINÁMICO DE MATRICES -->
     <div id="matrices-container"></div>
 
-    <!-- 3. GRÁFICO EN TIEMPO REAL -->
     <div class="section-title">3. Curva de Perfilado en Tiempo Real</div>
     <div class="chart-container">
       <div class="form-group">
@@ -283,7 +273,6 @@
       <canvas id="perfilChart" height="200"></canvas>
     </div>
 
-    <!-- 4. ESTADO GENERAL Y OBSERVACIONES -->
     <div class="section-title">4. Estado General y Observaciones</div>
 
     <div class="form-group">
@@ -506,13 +495,11 @@
       poblarFilasTablaCombinada("body-combinado", fasesA, fasesB, cant);
 
     } else { 
-      // RETENCION DOBLE (RD): Tablas apiladas (Lado A arriba, Lado B debajo)
       groupLadoB.style.display = "block";
       fasesA = ["F1 Externa", "F1 Interna", "F2 Externa", "F2 Interna", "F3 Externa", "F3 Interna"];
       fasesB = ["F1 Externa", "F1 Interna", "F2 Externa", "F2 Interna", "F3 Externa", "F3 Interna"];
 
       container.innerHTML = `
-        <!-- TABLA LADO A -->
         <div class="table-responsive">
           <table class="matrix">
             <thead>
@@ -534,7 +521,6 @@
           </table>
         </div>
 
-        <!-- TABLA LADO B -->
         <div class="table-responsive">
           <table class="matrix">
             <thead>
@@ -598,14 +584,12 @@
       const tr = document.createElement("tr");
       let html = `<td class="bg-yellow">${i}</td>`;
 
-      // LADO A
       fasesA.forEach((fase, index) => {
         const isLast = index === fasesA.length - 1;
         const dividerClass = isLast ? 'border-divider' : '';
         html += `<td class="${dividerClass}"><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="A" data-fase="${fase}"></td>`;
       });
 
-      // LADO B
       fasesB.forEach(fase => {
         html += `<td><input type="number" step="any" class="cell-val" data-num="${i}" data-lado="B" data-fase="${fase}"></td>`;
       });
