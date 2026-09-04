@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfilado de Cadenas de Aisladores</title>
+  <title>Perfilado de Cadenas de Aisladores 2.0</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -179,11 +179,23 @@
       color: #6c757d;
       margin-top: 2px;
     }
+    .offline-badge {
+      display: none;
+      background-color: #ffc107;
+      color: #000;
+      text-align: center;
+      padding: 6px;
+      font-weight: bold;
+      border-radius: 5px;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
+  <div id="offline-status" class="offline-badge">⚠️ Modo Offline (Sin conexión)</div>
   <h2>Perfilado de Cadenas de Aisladores</h2>
   
   <form id="form-perfilado">
@@ -291,15 +303,143 @@
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZneJSFTp4FZOrGP4AlYOjgLqV_odof8KmiYscquPDo9GYzrRMVNpLTkz4KF3-YxLk/exec";
   let catalogosGuardados = { lineas: [], responsables: {}, tiposApoyo: [] };
   let chartInstance = null;
+  let db = null;
+
+  // Registro del Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log("Service Worker registrado con éxito."))
+      .catch(err => console.error("Error al registrar Service Worker:", err));
+  }
 
   document.addEventListener("DOMContentLoaded", () => {
+    initDB();
     obtenerUbicacionGPS();
     inicializarGrafico();
     actualizarEstructuraMatriz();
     cargarDatosDesdeCache();
     setupEvents();
-    sincronizarCatalogos();
+    
+    if (navigator.onLine) {
+      sincronizarCatalogos();
+      sincronizarPendientes();
+    } else {
+      actualizarEstadoRed();
+    }
   });
+
+  // Base de datos Local (IndexedDB)
+  function initDB() {
+    const request = indexedDB.open("PWA_Perfilado_DB", 1);
+    request.onupgradeneeded = (e) => {
+      db = e.target.result;
+      if (!db.objectStoreNames.contains("mediciones_pendientes")) {
+        db.createObjectStore("mediciones_pendientes", { keyPath: "id", autoIncrement: true });
+      }
+    };
+    request.onsuccess = (e) => {
+      db = e.target.result;
+      actualizarContadorPendientes();
+    };
+    request.onerror = (e) => console.error("Error IndexedDB:", e);
+  }
+
+  function guardarLocalmente(payload) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(["mediciones_pendientes"], "readwrite");
+      const store = transaction.objectStore("mediciones_pendientes");
+      const request = store.add(payload);
+      request.onsuccess = () => {
+        actualizarContadorPendientes();
+        resolve();
+      };
+      request.onerror = (e) => reject(e);
+    });
+  }
+
+  function obtenerPendientes() {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(["mediciones_pendientes"], "readonly");
+      const store = transaction.objectStore("mediciones_pendientes");
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = (e) => reject(e);
+    });
+  }
+
+  function eliminarPendiente(id) {
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(["mediciones_pendientes"], "readwrite");
+      const store = transaction.objectStore("mediciones_pendientes");
+      const request = store.delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = (e) => reject(e);
+    });
+  }
+
+  async function actualizarContadorPendientes() {
+    if (!db) return;
+    const pendientes = await obtenerPendientes();
+    const statusDiv = document.getElementById("sync-status");
+    if (pendientes.length > 0) {
+      statusDiv.innerText = `📦 Tienes ${pendientes.length} medición(es) guardada(s) localmente sin enviar.`;
+    }
+  }
+
+  // Sincronización Automática
+  window.addEventListener('online', () => {
+    actualizarEstadoRed();
+    sincronizarCatalogos();
+    sincronizarPendientes();
+  });
+
+  window.addEventListener('offline', actualizarEstadoRed);
+
+  function actualizarEstadoRed() {
+    const badge = document.getElementById("offline-status");
+    if (navigator.onLine) {
+      badge.style.display = "none";
+    } else {
+      badge.style.display = "block";
+    }
+  }
+
+  async function sincronizarPendientes() {
+    if (!navigator.onLine || !db) return;
+
+    const pendientes = await obtenerPendientes();
+    if (pendientes.length === 0) return;
+
+    const statusDiv = document.getElementById("sync-status");
+    statusDiv.innerText = `⏳ Enviando ${pendientes.length} mediciones pendientes...`;
+
+    for (const item of pendientes) {
+      const id = item.id;
+      const payload = { ...item };
+      delete payload.id;
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        const res = await response.json();
+        if (res.status === "success") {
+          await eliminarPendiente(id);
+        }
+      } catch (err) {
+        console.error("Error enviando pendiente:", err);
+        break; // Detener bucle si falla la conexión
+      }
+    }
+
+    const restantes = await obtenerPendientes();
+    if (restantes.length === 0) {
+      statusDiv.innerText = "✅ Todas las mediciones offline fueron enviadas con éxito.";
+    } else {
+      statusDiv.innerText = `⚠️ Quedan ${restantes.length} mediciones pendientes de envío.`;
+    }
+  }
 
   function obtenerUbicacionGPS() {
     const inputGps = document.getElementById("coordenadas");
@@ -722,6 +862,8 @@
   }
 
   function sincronizarCatalogos() {
+    if (!navigator.onLine) return;
+
     const btn = document.getElementById("btn-force-sync");
     btn.disabled = true;
     btn.innerText = "⏳ Sincronizando...";
@@ -736,14 +878,14 @@
           document.getElementById("sync-status").innerText = "✅ Catálogos sincronizados.";
         }
       })
-      .catch(() => document.getElementById("sync-status").innerText = "❌ Error al sincronizar.")
+      .catch(() => document.getElementById("sync-status").innerText = "❌ Error al sincronizar catálogos.")
       .finally(() => {
         btn.disabled = false;
         btn.innerText = "🔄 Forzar Sincronización de Catálogos";
       });
   }
 
-  function enviarFormulario(e) {
+  async function enviarFormulario(e) {
     e.preventDefault();
 
     const tipoApoyoVal = document.getElementById("tipoApoyo").value;
@@ -802,6 +944,32 @@
 
     const btnGuardar = document.getElementById("btn-guardar");
     btnGuardar.disabled = true;
+
+    function limpiarFormularioExito() {
+      document.getElementById("piquete").value = "";
+      document.getElementById("tipoApoyo").value = "";
+      document.getElementById("observaciones").value = "";
+      actualizarEstructuraMatriz();
+      obtenerUbicacionGPS();
+    }
+
+    if (!navigator.onLine) {
+      // Guardado Local por falta de señal
+      btnGuardar.innerText = "Guardando localmente...";
+      try {
+        await guardarLocalmente(payload);
+        alert("📲 Guardado offline: La medición se guardó localmente en el teléfono. Se enviará a la hoja cuando recuperes señal de internet.");
+        limpiarFormularioExito();
+      } catch (err) {
+        alert("❌ Error guardando en el dispositivo: " + err);
+      } finally {
+        btnGuardar.disabled = false;
+        btnGuardar.innerText = "Guardar y Sincronizar";
+      }
+      return;
+    }
+
+    // Guardado directo Online
     btnGuardar.innerText = "Guardando...";
 
     fetch(SCRIPT_URL, {
@@ -812,18 +980,17 @@
     .then(res => {
       if (res.status === "success") {
         alert("✅ Mediciones registradas en la hoja: " + res.sheet);
-        
-        document.getElementById("piquete").value = "";
-        document.getElementById("tipoApoyo").value = "";
-        document.getElementById("observaciones").value = "";
-
-        actualizarEstructuraMatriz();
-        obtenerUbicacionGPS();
+        limpiarFormularioExito();
       } else {
         alert("Error: " + res.message);
       }
     })
-    .catch(() => alert("❌ Error de red al intentar guardar."))
+    .catch(async () => {
+      // Si falla la red durante la petición, fallback a guardado local
+      await guardarLocalmente(payload);
+      alert("⚠️ Falló el envío directo. Se guardó localmente y se reenviará automáticamente al recuperar conexión.");
+      limpiarFormularioExito();
+    })
     .finally(() => {
       btnGuardar.disabled = false;
       btnGuardar.innerText = "Guardar y Sincronizar";
