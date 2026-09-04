@@ -945,13 +945,20 @@
     const btnGuardar = document.getElementById("btn-guardar");
     btnGuardar.disabled = true;
 
-    function limpiarFormularioExito() {
-      document.getElementById("piquete").value = "";
-      document.getElementById("tipoApoyo").value = "";
-      document.getElementById("observaciones").value = "";
-      actualizarEstructuraMatriz();
-      obtenerUbicacionGPS();
-    }
+    // CÓDIGO NUEVO:
+function limpiarFormularioExito() {
+  document.getElementById("piquete").value = "";
+  document.getElementById("tipoApoyo").value = "";
+  document.getElementById("observaciones").value = "";
+  
+  // Restablecer los inputs de texto a sus valores predeterminados
+  document.getElementById("lado-a").value = "LADO A";
+  document.getElementById("lado-b").value = "LADO B";
+  
+  // Reconstruir la tabla para reflejar los nombres limpios
+  actualizarEstructuraMatriz();
+  obtenerUbicacionGPS();
+}
 
     if (!navigator.onLine) {
       // Guardado Local por falta de señal
