@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfilado de Cadenas de Aisladores 2.2</title>
+  <title>Perfilado de Cadenas de Aisladores 2.3</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -196,7 +196,7 @@
 
 <div class="container">
   <div id="offline-status" class="offline-badge">⚠️ Modo Offline (Sin conexión)</div>
-  <h2>Perfilado de Cadenas de Aisladores 2.2</h2>
+  <h2>Perfilado de Cadenas de Aisladores 2.3</h2>
   
   <form id="form-perfilado">
     <div class="section-title">1. Datos de Cabecera</div>
@@ -708,7 +708,7 @@
       let html = `<td class="bg-yellow">${i}</td>`;
 
       fases.forEach(fase => {
-        html += `<td><input type="number" step="any" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" class="cell-val" data-num="${i}" data-lado="${ladoKey}" data-fase="${fase}"></td>`;
+        html += `<td><input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" class="cell-val" data-num="${i}" data-lado="${ladoKey}" data-fase="${fase}"></td>`;
       });
 
       tr.innerHTML = html;
@@ -727,11 +727,11 @@
       fasesA.forEach((fase, index) => {
         const isLast = index === fasesA.length - 1;
         const dividerClass = isLast ? 'border-divider' : '';
-        html += `<td class="${dividerClass}"><input type="number" step="any" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" class="cell-val" data-num="${i}" data-lado="A" data-fase="${fase}"></td>`;
+        html += `<td class="${dividerClass}"><input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" class="cell-val" data-num="${i}" data-lado="A" data-fase="${fase}"></td>`;
       });
 
       fasesB.forEach(fase => {
-        html += `<td><input type="number" step="any" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" class="cell-val" data-num="${i}" data-lado="B" data-fase="${fase}"></td>`;
+        html += `<td><input type="text" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" class="cell-val" data-num="${i}" data-lado="B" data-fase="${fase}"></td>`;
       });
 
       tr.innerHTML = html;
@@ -755,7 +755,10 @@
       labels.push(i);
       const input = document.querySelector(`.cell-val[data-num="${i}"][data-lado="${ladoSel}"][data-fase="${faseSel}"]`);
       if (input && input.value !== "") {
-        points.push({ x: i, y: parseFloat(input.value) });
+        const valSanitizado = parseFloat(input.value.replace(',', '.'));
+        if (!isNaN(valSanitizado)) {
+          points.push({ x: i, y: valSanitizado });
+        }
       }
     }
 
@@ -815,6 +818,10 @@
 
     document.getElementById("matrices-container").addEventListener("input", (e) => {
       if (e.target.classList.contains("cell-val")) {
+        // Reemplazar comas automáticamente por puntos
+        if (e.target.value.includes(',')) {
+          e.target.value = e.target.value.replace(',', '.');
+        }
         actualizarGrafico();
       }
     });
@@ -912,12 +919,13 @@
 
     document.querySelectorAll(".cell-val").forEach(input => {
       if (input.value !== "") {
+        const valLimpio = input.value.replace(',', '.');
         mediciones.push({
           lado: input.dataset.lado === "A" ? ladoANombre : ladoBNombre,
           ladoKey: input.dataset.lado,
           fase: input.dataset.fase,
           numAislador: input.dataset.num,
-          valor: input.value
+          valor: valLimpio
         });
       }
     });
