@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfilado de Cadenas de Aisladores 2.0</title>
+  <title>Perfilado de Cadenas de Aisladores 2.1</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -196,7 +196,7 @@
 
 <div class="container">
   <div id="offline-status" class="offline-badge">⚠️ Modo Offline (Sin conexión)</div>
-  <h2>Perfilado de Cadenas de Aisladores 2.0</h2>
+  <h2>Perfilado de Cadenas de Aisladores 2.1</h2>
   
   <form id="form-perfilado">
     <div class="section-title">1. Datos de Cabecera</div>
@@ -703,7 +703,7 @@
     const tbody = document.getElementById(tbodyId);
     if (!tbody) return;
 
-    for (let i = 1; i <= cant; i++) {
+    for (let i = cant; i >= 1; i--) {
       const tr = document.createElement("tr");
       let html = `<td class="bg-yellow">${i}</td>`;
 
@@ -720,7 +720,7 @@
     const tbody = document.getElementById(tbodyId);
     if (!tbody) return;
 
-    for (let i = 1; i <= cant; i++) {
+    for (let i = cant; i >= 1; i--) {
       const tr = document.createElement("tr");
       let html = `<td class="bg-yellow">${i}</td>`;
 
@@ -945,23 +945,19 @@
     const btnGuardar = document.getElementById("btn-guardar");
     btnGuardar.disabled = true;
 
-    // CÓDIGO NUEVO:
-function limpiarFormularioExito() {
-  document.getElementById("piquete").value = "";
-  document.getElementById("tipoApoyo").value = "";
-  document.getElementById("observaciones").value = "";
-  
-  // Restablecer los inputs de texto a sus valores predeterminados
-  document.getElementById("lado-a").value = "LADO A";
-  document.getElementById("lado-b").value = "LADO B";
-  
-  // Reconstruir la tabla para reflejar los nombres limpios
-  actualizarEstructuraMatriz();
-  obtenerUbicacionGPS();
-}
+    function limpiarFormularioExito() {
+      document.getElementById("piquete").value = "";
+      document.getElementById("tipoApoyo").value = "";
+      document.getElementById("observaciones").value = "";
+      
+      document.getElementById("lado-a").value = "LADO A";
+      document.getElementById("lado-b").value = "LADO B";
+      
+      actualizarEstructuraMatriz();
+      obtenerUbicacionGPS();
+    }
 
     if (!navigator.onLine) {
-      // Guardado Local por falta de señal
       btnGuardar.innerText = "Guardando localmente...";
       try {
         await guardarLocalmente(payload);
@@ -976,7 +972,6 @@ function limpiarFormularioExito() {
       return;
     }
 
-    // Guardado directo Online
     btnGuardar.innerText = "Guardando...";
 
     fetch(SCRIPT_URL, {
@@ -993,7 +988,6 @@ function limpiarFormularioExito() {
       }
     })
     .catch(async () => {
-      // Si falla la red durante la petición, fallback a guardado local
       await guardarLocalmente(payload);
       alert("⚠️ Falló el envío directo. Se guardó localmente y se reenviará automáticamente al recuperar conexión.");
       limpiarFormularioExito();
