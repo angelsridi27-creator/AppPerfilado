@@ -3,10 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfilado de Cadenas de Aisladores 2.5</title>
+  <title>Perfilado de Cadenas de Aisladores 2.5.1</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Librería para captura e imagen -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     :root {
       --primary: #0d6efd;
@@ -196,9 +194,9 @@
 </head>
 <body>
 
-<div class="container" id="app-container">
+<div class="container">
   <div id="offline-status" class="offline-badge">⚠️ Modo Offline (Sin conexión)</div>
-  <h2>Perfilado de Cadenas de Aisladores 2.5</h2>
+  <h2>Perfilado de Cadenas de Aisladores 2.5.1</h2>
   
   <form id="form-perfilado">
     <div class="section-title">1. Datos de Cabecera</div>
@@ -247,47 +245,44 @@
       <select id="tipoApoyo" required><option value="">Seleccione...</option></select>
     </div>
 
-    <!-- ÁREA DE CAPTURA DE IMAGEN DE RESPALDO -->
-    <div id="area-captura-imagen">
-      <div class="section-title">2. Planilla de Lecturas Registradas</div>
+    <div class="section-title">2. Planilla de Lecturas Registradas</div>
 
-      <div class="grid-2" id="box-nombres-lados">
-        <div class="form-group" id="group-lado-a">
-          <label for="lado-a">Nombre Lado A <span id="req-lado-a"></span></label>
-          <input type="text" id="lado-a" placeholder="Ej: LADO A" value="LADO A">
-        </div>
-        <div class="form-group" id="group-lado-b">
-          <label for="lado-b">Nombre Lado B <span id="req-lado-b"></span></label>
-          <input type="text" id="lado-b" placeholder="Ej: LADO B" value="LADO B">
-        </div>
+    <div class="grid-2" id="box-nombres-lados">
+      <div class="form-group" id="group-lado-a">
+        <label for="lado-a">Nombre Lado A <span id="req-lado-a"></span></label>
+        <input type="text" id="lado-a" placeholder="Ej: LADO A" value="LADO A">
       </div>
+      <div class="form-group" id="group-lado-b">
+        <label for="lado-b">Nombre Lado B <span id="req-lado-b"></span></label>
+        <input type="text" id="lado-b" placeholder="Ej: LADO B" value="LADO B">
+      </div>
+    </div>
 
+    <div class="form-group">
+      <label for="cant-aisladores">Cant. Aisladores por Cadena (5 al 14)</label>
+      <select id="cant-aisladores">
+        <option value="5">5 Aisladores</option>
+        <option value="6" selected>6 Aisladores</option>
+        <option value="7">7 Aisladores</option>
+        <option value="8">8 Aisladores</option>
+        <option value="9">9 Aisladores</option>
+        <option value="10">10 Aisladores</option>
+        <option value="11">11 Aisladores</option>
+        <option value="12">12 Aisladores</option>
+        <option value="13">13 Aisladores</option>
+        <option value="14">14 Aisladores</option>
+      </select>
+    </div>
+
+    <div id="matrices-container"></div>
+
+    <div class="section-title">3. Curva de Perfilado en Tiempo Real</div>
+    <div class="chart-container">
       <div class="form-group">
-        <label for="cant-aisladores">Cant. Aisladores por Cadena (5 al 14)</label>
-        <select id="cant-aisladores">
-          <option value="5">5 Aisladores</option>
-          <option value="6" selected>6 Aisladores</option>
-          <option value="7">7 Aisladores</option>
-          <option value="8">8 Aisladores</option>
-          <option value="9">9 Aisladores</option>
-          <option value="10">10 Aisladores</option>
-          <option value="11">11 Aisladores</option>
-          <option value="12">12 Aisladores</option>
-          <option value="13">13 Aisladores</option>
-          <option value="14">14 Aisladores</option>
-        </select>
+        <label for="select-curva-fase">Ver Curva de:</label>
+        <select id="select-curva-fase"></select>
       </div>
-
-      <div id="matrices-container"></div>
-
-      <div class="section-title">3. Curva de Perfilado en Tiempo Real</div>
-      <div class="chart-container">
-        <div class="form-group">
-          <label for="select-curva-fase">Ver Curva de:</label>
-          <select id="select-curva-fase"></select>
-        </div>
-        <canvas id="perfilChart" height="200"></canvas>
-      </div>
+      <canvas id="perfilChart" height="200"></canvas>
     </div>
 
     <div class="section-title">4. Estado General y Observaciones</div>
@@ -893,29 +888,21 @@
       });
   }
 
-  // FUNCIÓN PARA GENERAR Y DESCARGAR IMAGEN DEL PIQUETE
-  async function descargarImagenPiquete(piqueteNum) {
-    const area = document.getElementById("area-captura-imagen");
-    if (!area) return;
-
+  // DESCARGA RÁPIDA DE IMAGEN VÍA CHART.JS (NATIVA Y SIN ERRORES)
+  function descargarImagenGrafico(piqueteNum) {
+    if (!chartInstance) return;
     try {
-      const canvas = await html2canvas(area, {
-        scale: 2, // Mayor calidad/resolución
-        backgroundColor: "#ffffff",
-        useCORS: true
-      });
-
-      const dataUrl = canvas.toDataURL("image/png");
+      const imageURI = chartInstance.toBase64Image();
       const link = document.createElement("a");
       const fecha = new Date().toISOString().slice(0, 10);
       
-      link.download = `Piquete_${piqueteNum}_${fecha}.png`;
-      link.href = dataUrl;
+      link.download = `Piquete_${piqueteNum}_Grafico_${fecha}.png`;
+      link.href = imageURI;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } catch (err) {
-      console.error("Error al capturar la imagen:", err);
+      console.warn("No se pudo generar la imagen del gráfico:", err);
     }
   }
 
@@ -993,15 +980,14 @@
       obtenerUbicacionGPS();
     }
 
-    // CAPTURA Y DESCARGA DE IMAGEN LOCAL
-    btnGuardar.innerText = "Generando respaldo de imagen...";
-    await descargarImagenPiquete(piqueteNum);
+    // Descarga nativa y ligera de la imagen
+    descargarImagenGrafico(piqueteNum);
 
     if (!navigator.onLine) {
       btnGuardar.innerText = "Guardando localmente...";
       try {
         await guardarLocalmente(payload);
-        alert("📲 Guardado offline: La medición y la imagen se guardaron localmente en el teléfono.");
+        alert("📲 Guardado offline: La medición se guardó localmente en el teléfono.");
         limpiarFormularioExito();
       } catch (err) {
         alert("❌ Error guardando en el dispositivo: " + err);
@@ -1021,7 +1007,7 @@
     .then(r => r.json())
     .then(res => {
       if (res.status === "success") {
-        alert("✅ Mediciones registradas en la hoja e imagen descargada: " + res.sheet);
+        alert("✅ Mediciones registradas en la hoja: " + res.sheet);
         limpiarFormularioExito();
       } else {
         alert("Error: " + res.message);
