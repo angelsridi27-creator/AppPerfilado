@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfilado de Cadenas de Aisladores 2.5.3</title>
+  <title>Perfilado de Cadenas de Aisladores 2.5.4</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -196,7 +196,7 @@
 
 <div class="container">
   <div id="offline-status" class="offline-badge">⚠️ Modo Offline (Sin conexión)</div>
-  <h2>Perfilado de Cadenas de Aisladores 2.5.3</h2>
+  <h2>Perfilado de Cadenas de Aisladores 2.5.4</h2>
   
   <form id="form-perfilado">
     <div class="section-title">1. Datos de Cabecera</div>
@@ -890,22 +890,43 @@
       });
   }
 
-  // DESCARGA DE IMAGEN COMPATIBLE Y ULTRA RÁPIDA (PNG)
-  function descargarImagenGrafico(piqueteNum) {
+  // DESCARGA / COMPARTIR IMAGEN COMPATIBLE Y SEGURA PARA iOS Y ANDROID
+  async function descargarImagenGrafico(piqueteNum) {
     if (!chartInstance) return;
     try {
-      // Exporta la curva actual en alta calidad directamente desde el motor gráfico
-      const imageURI = chartInstance.toBase64Image('image/png', 1.0);
-      const link = document.createElement("a");
-      const fecha = new Date().toISOString().slice(0, 10);
-      
-      link.download = `Piquete_${piqueteNum}_Grafico_${fecha}.png`;
-      link.href = imageURI;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const canvas = document.getElementById('perfilChart');
+      if (!canvas) return;
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const nombreArchivo = `Piquete_${piqueteNum}_Grafico.png`;
+        const file = new File([blob], nombreArchivo, { type: 'image/png' });
+
+        // Método 1: Menú Compartir/Guardar nativo del celular (iOS / Android)
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: `Grafico Piquete ${piqueteNum}`,
+              text: `Perfilado Piquete N° ${piqueteNum}`
+            });
+            return;
+          } catch (e) {
+            console.log("Menú compartir cancelado o no soportado:", e);
+          }
+        }
+
+        // Método 2: Descarga por enlace (Android / Navegadores Desktop)
+        const link = document.createElement("a");
+        link.download = nombreArchivo;
+        link.href = URL.createObjectURL(blob);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }, 'image/png');
+
     } catch (err) {
-      console.warn("No se pudo descargar la imagen del gráfico:", err);
+      console.warn("No se pudo exportar la imagen:", err);
     }
   }
 
@@ -970,6 +991,7 @@
 
     const btnGuardar = document.getElementById("btn-guardar");
     btnGuardar.disabled = true;
+    btnGuardar.innerText = "Guardando...";
 
     function limpiarFormularioExito() {
       document.getElementById("piquete").value = "";
@@ -983,14 +1005,14 @@
       obtenerUbicacionGPS();
     }
 
-    // 1. DESCARGA AUTOMÁTICA DE LA IMAGEN EN EL TELÉFONO
+    // Exportar gráfico sin bloquear el flujo principal
     descargarImagenGrafico(piqueteNum);
 
-    // 2. MODO OFFLINE
+    // MODO OFFLINE
     if (!navigator.onLine) {
       try {
         await guardarLocalmente(payload);
-        alert("📲 Imagen descargada y medición guardada localmente en el teléfono. Se enviará a la hoja cuando recuperes conexión.");
+        alert("📲 Medición guardada localmente en el teléfono. Se enviará a la hoja al recuperar conexión.");
         limpiarFormularioExito();
       } catch (err) {
         alert("❌ Error guardando en el dispositivo: " + err);
@@ -1001,31 +1023,28 @@
       return;
     }
 
-    // 3. MODO ONLINE
-    btnGuardar.innerText = "Guardando...";
+    // MODO ONLINE
+    try {
+      const response = await fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      const res = await response.json();
 
-    fetch(SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify(payload)
-    })
-    .then(r => r.json())
-    .then(res => {
       if (res.status === "success") {
-        alert("✅ Imagen guardada en el dispositivo y mediciones registradas en la hoja: " + res.sheet);
+        alert("✅ Mediciones registradas en la hoja: " + res.sheet);
         limpiarFormularioExito();
       } else {
         alert("Error: " + res.message);
       }
-    })
-    .catch(async () => {
+    } catch (err) {
       await guardarLocalmente(payload);
-      alert("⚠️ Falló el envío directo. La imagen se descargó y los datos se guardaron localmente.");
+      alert("⚠️ La señal de red fue inestable. Los datos se guardaron localmente en el teléfono.");
       limpiarFormularioExito();
-    })
-    .finally(() => {
+    } finally {
       btnGuardar.disabled = false;
       btnGuardar.innerText = "Guardar y Sincronizar";
-    });
+    }
   }
 </script>
 </body>
