@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfilado de Cadenas de Aisladores 2.5.7</title>
+  <title>Perfilado de Cadenas de Aisladores 2.5.8</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -202,13 +202,80 @@
       margin-bottom: 10px;
       font-size: 0.85rem;
     }
+
+    /* Estilos para el listado de líneas perfiladas */
+    .card-header-list {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .section-desc {
+      font-size: 0.85rem;
+      color: #666;
+      margin-bottom: 12px;
+    }
+    .lineas-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .linea-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      background-color: #f8f9fa;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    .linea-info {
+      font-weight: 600;
+      color: #1a202c;
+      word-break: break-word;
+      padding-right: 8px;
+      font-size: 0.9rem;
+    }
+    .btn-secondary {
+      background-color: #edf2f7;
+      color: #2d3748;
+      border: 1px solid #cbd5e0;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-item-pdf {
+      background-color: #1a73e8;
+      color: #ffffff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-item-pdf:disabled {
+      background-color: #a0aec0;
+      cursor: not-allowed;
+    }
+    .loading-item, .empty-item {
+      text-align: center;
+      color: #718096;
+      padding: 14px;
+      font-style: italic;
+      font-size: 0.85rem;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
   <div id="offline-status" class="offline-badge">⚠️ Modo Offline (Sin conexión)</div>
-  <h2>Perfilado de Cadenas de Aisladores 2.5.7</h2>
+  <h2>Perfilado de Cadenas de Aisladores 2.5.8</h2>
   
   <form id="form-perfilado">
     <div class="section-title">1. Datos de Cabecera</div>
@@ -308,6 +375,18 @@
   </form>
 
   <button type="button" id="btn-generar-pdf" class="btn-pdf">📄 Generar y Descargar Reporte PDF</button>
+
+  <!-- SECCIÓN 5: CONSULTA Y DESCARGA DE LÍNEAS PERFILADAS -->
+  <div class="section-title">5. Reportes de Líneas Registradas</div>
+  <div class="card-header-list">
+    <p class="section-desc" style="margin:0;">Selecciona una línea para generar su reporte:</p>
+    <button id="btnCargarLineas" class="btn-secondary" onclick="cargarListaLineas()">🔄 Actualizar</button>
+  </div>
+  
+  <ul id="listaLineas" class="lineas-list" style="margin-top: 10px;">
+    <li class="loading-item">Cargando líneas registradas...</li>
+  </ul>
+
   <button type="button" id="btn-force-sync" class="btn-sync">🔄 Forzar Sincronización de Catálogos</button>
   <div id="sync-status" class="status-message"></div>
 </div>
@@ -335,6 +414,7 @@
     if (navigator.onLine) {
       sincronizarCatalogos();
       sincronizarPendientes();
+      cargarListaLineas();
     } else {
       actualizarEstadoRed();
     }
@@ -403,6 +483,7 @@
     actualizarEstadoRed();
     sincronizarCatalogos();
     sincronizarPendientes();
+    cargarListaLineas();
   });
 
   window.addEventListener('offline', actualizarEstadoRed);
@@ -851,7 +932,15 @@
     });
 
     document.getElementById("btn-force-sync").addEventListener("click", sincronizarCatalogos);
-    document.getElementById("btn-generar-pdf").addEventListener("click", generarPDFDesdeApp);
+    document.getElementById("btn-generar-pdf").addEventListener("click", () => {
+      const lineaVal = document.getElementById("linea").value.trim();
+      if (!lineaVal) {
+        alert("⚠️ Selecciona o ingresa una Línea para generar su PDF.");
+        document.getElementById("linea").focus();
+        return;
+      }
+      descargarPDFLinea(lineaVal, document.getElementById("btn-generar-pdf"));
+    });
     document.getElementById("form-perfilado").addEventListener("submit", enviarFormulario);
   }
 
@@ -904,43 +993,109 @@
       });
   }
 
-  // FUNCIÓN PARA GENERAR Y DESCARGAR EL PDF DIRECTAMENTE
-  async function generarPDFDesdeApp() {
-    const linea = document.getElementById("linea").value.trim();
-    if (!linea) {
-      alert("⚠️ Selecciona o ingresa una Línea para generar su PDF.");
-      document.getElementById("linea").focus();
+  /**
+   * Obtiene la lista de hojas/líneas con registros de perfilado disponibles
+   */
+  async function cargarListaLineas() {
+    const listaContainer = document.getElementById("listaLineas");
+    if (!navigator.onLine) {
+      listaContainer.innerHTML = '<li class="empty-item">⚠️ Sin conexión para consultar líneas del servidor.</li>';
       return;
     }
 
+    listaContainer.innerHTML = '<li class="loading-item">⏳ Obteniendo líneas...</li>';
+
+    try {
+      const res = await fetch(`${SCRIPT_URL}?action=obtenerLineasPerfiladas&nocache=${new Date().getTime()}`);
+      const data = await res.json();
+
+      if (data.status === "success") {
+        listaContainer.innerHTML = "";
+        
+        if (!data.lineas || data.lineas.length === 0) {
+          listaContainer.innerHTML = '<li class="empty-item">No hay perfilados realizados aún.</li>';
+          return;
+        }
+
+        data.lineas.forEach(linea => {
+          const li = document.createElement("li");
+          li.className = "linea-item";
+          
+          li.innerHTML = `
+            <span class="linea-info">📌 ${linea}</span>
+            <button class="btn-item-pdf" onclick="descargarPDFLinea('${linea}', this)">
+              📄 Generar PDF
+            </button>
+          `;
+          
+          listaContainer.appendChild(li);
+        });
+      } else {
+        listaContainer.innerHTML = '<li class="empty-item">⚠️ Error al consultar el servidor.</li>';
+      }
+    } catch (err) {
+      console.error(err);
+      listaContainer.innerHTML = '<li class="empty-item">⚠️ Error de conexión al obtener lista.</li>';
+    }
+  }
+
+  /**
+   * Pide la cadena Base64 del PDF al servidor, crea un Blob nativo e inicia la descarga/apertura
+   */
+  async function descargarPDFLinea(nombreLinea, btnElement) {
     if (!navigator.onLine) {
       alert("⚠️ Necesitas conexión a internet para generar y descargar el reporte PDF.");
       return;
     }
 
-    const btnPdf = document.getElementById("btn-generar-pdf");
-    btnPdf.disabled = true;
-    btnPdf.innerText = "⏳ Generando PDF acumulativo...";
+    const textoOriginal = btnElement.innerText;
+    btnElement.innerText = "⏳ Generando...";
+    btnElement.disabled = true;
 
     try {
-      const response = await fetch(`${SCRIPT_URL}?action=generarPDF&linea=${encodeURIComponent(linea)}`);
-      const res = await response.json();
+      const res = await fetch(`${SCRIPT_URL}?action=generarPDF&linea=${encodeURIComponent(nombreLinea)}`);
+      const data = await res.json();
 
-      if (res.status === "success" && res.pdfBase64) {
-        const link = document.createElement("a");
-        link.download = `Reporte_PDF_${linea}.pdf`;
-        link.href = "data:application/pdf;base64," + res.pdfBase64;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      if (data.status === "success" && data.pdfBase64) {
+        
+        // 1. Decodificar la cadena Base64
+        const byteCharacters = atob(data.pdfBase64);
+        const byteNumbers = new Array(byteCharacters.length);
+        
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        
+        const byteArray = new Uint8Array(byteNumbers);
+        
+        // 2. Crear Blob con MIME-Type explícito
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+        // 3. Generar URL interna
+        const fileURL = URL.createObjectURL(blob);
+        const nombreArchivo = `Reporte_${nombreLinea.replace(/\s+/g, '_')}.pdf`;
+
+        // 4. Iniciar descarga nativa PWA/Móvil
+        const a = document.createElement('a');
+        a.href = fileURL;
+        a.download = nombreArchivo;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        // 5. Liberar URL Blob
+        setTimeout(() => URL.revokeObjectURL(fileURL), 15000);
+
       } else {
-        alert("❌ Error: " + (res.message || "No se pudo generar el PDF."));
+        alert("❌ Error al generar el PDF: " + (data.message || "Respuesta incompleta del servidor."));
       }
     } catch (err) {
-      alert("❌ Error al procesar el PDF: " + err.message);
+      console.error(err);
+      alert("❌ Error de conexión al generar el archivo: " + err.message);
     } finally {
-      btnPdf.disabled = false;
-      btnPdf.innerText = "📄 Generar y Descargar Reporte PDF";
+      btnElement.innerText = textoOriginal;
+      btnElement.disabled = false;
     }
   }
 
@@ -1045,6 +1200,7 @@
       if (res.status === "success") {
         alert("✅ Mediciones registradas en la hoja: " + res.sheet);
         limpiarFormularioExito();
+        cargarListaLineas(); // Recargar la lista tras registrar una nueva línea
       } else {
         alert("Error: " + res.message);
       }
