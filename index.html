@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfilado de Cadenas de Aisladores 2.5.8</title>
+  <title>Perfilado de Cadenas de Aisladores 2.5.9</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -275,7 +275,7 @@
 
 <div class="container">
   <div id="offline-status" class="offline-badge">⚠️ Modo Offline (Sin conexión)</div>
-  <h2>Perfilado de Cadenas de Aisladores 2.5.8</h2>
+  <h2>Perfilado de Cadenas de Aisladores 2.5.9</h2>
   
   <form id="form-perfilado">
     <div class="section-title">1. Datos de Cabecera</div>
@@ -1040,7 +1040,8 @@
   }
 
   /**
-   * Pide la cadena Base64 del PDF al servidor, crea un Blob nativo e inicia la descarga/apertura
+   * Función optimizada para compartir directamente el archivo PDF
+   * sin generar enlaces de texto tipo blob:http... en WhatsApp
    */
   async function descargarPDFLinea(nombreLinea, btnElement) {
     if (!navigator.onLine) {
@@ -1058,7 +1059,7 @@
 
       if (data.status === "success" && data.pdfBase64) {
         
-        // 1. Decodificar la cadena Base64
+        // 1. Decodificar la cadena Base64 a arreglo de bytes
         const byteCharacters = atob(data.pdfBase64);
         const byteNumbers = new Array(byteCharacters.length);
         
@@ -1067,32 +1068,40 @@
         }
         
         const byteArray = new Uint8Array(byteNumbers);
-        
-        // 2. Crear Blob con MIME-Type explícito
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
-
-        // 3. Generar URL interna
-        const fileURL = URL.createObjectURL(blob);
         const nombreArchivo = `Reporte_${nombreLinea.replace(/\s+/g, '_')}.pdf`;
+        
+        // 2. Crear un objeto File directamente
+        const file = new File([byteArray], nombreArchivo, { type: 'application/pdf' });
 
-        // 4. Iniciar descarga nativa PWA/Móvil
-        const a = document.createElement('a');
-        a.href = fileURL;
-        a.download = nombreArchivo;
-        a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        // 3. Si el dispositivo soporta Web Share API para archivos, lo comparte sin texto ni URL
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file] // Se omite url y text para evitar el blob de texto en WhatsApp
+          });
+        } else {
+          // Fallback para navegadores que no soportan Web Share
+          const blob = new Blob([byteArray], { type: 'application/pdf' });
+          const fileURL = URL.createObjectURL(blob);
 
-        // 5. Liberar URL Blob
-        setTimeout(() => URL.revokeObjectURL(fileURL), 15000);
+          const a = document.createElement('a');
+          a.href = fileURL;
+          a.download = nombreArchivo;
+          a.target = '_blank';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+
+          setTimeout(() => URL.revokeObjectURL(fileURL), 15000);
+        }
 
       } else {
         alert("❌ Error al generar el PDF: " + (data.message || "Respuesta incompleta del servidor."));
       }
     } catch (err) {
-      console.error(err);
-      alert("❌ Error de conexión al generar el archivo: " + err.message);
+      if (err.name !== "AbortError") {
+        console.error(err);
+        alert("❌ Error al procesar el archivo PDF: " + err.message);
+      }
     } finally {
       btnElement.innerText = textoOriginal;
       btnElement.disabled = false;
