@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfilado de Cadenas de Aisladores 2.5.6</title>
+  <title>Perfilado de Cadenas de Aisladores 2.5.7</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -156,6 +156,18 @@
       cursor: pointer;
       margin-top: 15px;
     }
+    .btn-pdf {
+      width: 100%;
+      background-color: #198754;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
     .btn-sync {
       background-color: #6c757d;
       color: white;
@@ -196,7 +208,7 @@
 
 <div class="container">
   <div id="offline-status" class="offline-badge">⚠️ Modo Offline (Sin conexión)</div>
-  <h2>Perfilado de Cadenas de Aisladores 2.5.6</h2>
+  <h2>Perfilado de Cadenas de Aisladores 2.5.7</h2>
   
   <form id="form-perfilado">
     <div class="section-title">1. Datos de Cabecera</div>
@@ -295,6 +307,7 @@
     <button type="submit" class="btn-submit" id="btn-guardar">Guardar y Sincronizar</button>
   </form>
 
+  <button type="button" id="btn-generar-pdf" class="btn-pdf">📄 Generar y Descargar Reporte PDF</button>
   <button type="button" id="btn-force-sync" class="btn-sync">🔄 Forzar Sincronización de Catálogos</button>
   <div id="sync-status" class="status-message"></div>
 </div>
@@ -838,6 +851,7 @@
     });
 
     document.getElementById("btn-force-sync").addEventListener("click", sincronizarCatalogos);
+    document.getElementById("btn-generar-pdf").addEventListener("click", generarPDFDesdeApp);
     document.getElementById("form-perfilado").addEventListener("submit", enviarFormulario);
   }
 
@@ -890,118 +904,44 @@
       });
   }
 
-  // GENERADOR NATIVO DE PLANILLA EN IMAGEN (CABECERA + TABLA + GRÁFICO)
-  async function descargarImagenCompleta(payload) {
-    return new Promise((resolve) => {
-      const canvas = document.createElement("canvas");
-      canvas.width = 800;
-      canvas.height = 1000;
-      const ctx = canvas.getContext("2d");
+  // FUNCIÓN PARA GENERAR Y DESCARGAR EL PDF DIRECTAMENTE
+  async function generarPDFDesdeApp() {
+    const linea = document.getElementById("linea").value.trim();
+    if (!linea) {
+      alert("⚠️ Selecciona o ingresa una Línea para generar su PDF.");
+      document.getElementById("linea").focus();
+      return;
+    }
 
-      // Fondo Blanco
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (!navigator.onLine) {
+      alert("⚠️ Necesitas conexión a internet para generar y descargar el reporte PDF.");
+      return;
+    }
 
-      // Encabezado Azul
-      ctx.fillStyle = "#0d6efd";
-      ctx.fillRect(0, 0, canvas.width, 60);
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 20px sans-serif";
-      ctx.fillText("REPORTE DE PERFILADO DE AISLADORES", 20, 38);
+    const btnPdf = document.getElementById("btn-generar-pdf");
+    btnPdf.disabled = true;
+    btnPdf.innerText = "⏳ Generando PDF acumulativo...";
 
-      // Metadatos Cabecera
-      ctx.fillStyle = "#212529";
-      ctx.font = "14px sans-serif";
-      const fechaActual = new Date().toLocaleDateString('es-AR');
-      
-      ctx.fillText(`LÍNEA: ${payload.linea}`, 20, 90);
-      ctx.fillText(`PIQUETE N°: ${payload.piquete}`, 20, 115);
-      ctx.fillText(`FECHA: ${fechaActual}`, 20, 140);
-      ctx.fillText(`RESPONSABLE: ${payload.responsable}`, 20, 165);
+    try {
+      const response = await fetch(`${SCRIPT_URL}?action=generarPDF&linea=${encodeURIComponent(linea)}`);
+      const res = await response.json();
 
-      ctx.fillText(`TIPO CADENA: ${payload.tipoApoyo}`, 420, 90);
-      ctx.fillText(`DIVISIÓN: ${payload.division}`, 420, 115);
-      ctx.fillText(`PERFILADOR: ${payload.perfilador}`, 420, 140);
-
-      // Línea divisora
-      ctx.strokeStyle = "#ced4da";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(20, 185);
-      ctx.lineTo(780, 185);
-      ctx.stroke();
-
-      // Título Matriz
-      ctx.fillStyle = "#0d6efd";
-      ctx.font = "bold 15px sans-serif";
-      ctx.fillText("RESUMEN DE MEDICIONES INGRESADAS", 20, 210);
-
-      // Dibujar resumen breve de valores
-      ctx.fillStyle = "#212529";
-      ctx.font = "12px sans-serif";
-      let yPos = 235;
-
-      const mediciones = payload.mediciones || [];
-      const ultimasMediciones = mediciones.slice(0, 10);
-
-      ultimasMediciones.forEach((m, idx) => {
-        ctx.fillText(`Aislador N° ${m.numAislador} | ${m.lado} (${m.fase}): ${m.valor} kV`, 20, yPos);
-        yPos += 20;
-      });
-
-      if (mediciones.length > 10) {
-        ctx.fillText(`... y ${mediciones.length - 10} lecturas adicionales grabadas.`, 20, yPos);
-        yPos += 25;
+      if (res.status === "success" && res.pdfBase64) {
+        const link = document.createElement("a");
+        link.download = `Reporte_PDF_${linea}.pdf`;
+        link.href = "data:application/pdf;base64," + res.pdfBase64;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       } else {
-        yPos += 10;
+        alert("❌ Error: " + (res.message || "No se pudo generar el PDF."));
       }
-
-      // Dibujar Gráfica
-      if (chartInstance && chartInstance.canvas) {
-        ctx.fillStyle = "#0d6efd";
-        ctx.font = "bold 15px sans-serif";
-        ctx.fillText("CURVA DE PERFILADO EN TIEMPO REAL", 20, yPos);
-        yPos += 15;
-
-        const chartImage = new Image();
-        chartImage.onload = () => {
-          ctx.drawImage(chartImage, 20, yPos, 760, 380);
-          
-          // Exportar imagen final
-          canvas.toBlob(async (blob) => {
-            if (!blob) { resolve(); return; }
-            const nombreArchivo = `Planilla_Piquete_${payload.piquete}.png`;
-            const file = new File([blob], nombreArchivo, { type: 'image/png' });
-
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              try {
-                await navigator.share({
-                  files: [file],
-                  title: `Piquete ${payload.piquete}`,
-                  text: `Planilla de Perfilado Piquete ${payload.piquete}`
-                });
-                resolve();
-                return;
-              } catch (e) {
-                console.log("Compartir cerrado:", e);
-              }
-            }
-
-            // Descarga limpia por enlace
-            const link = document.createElement("a");
-            link.download = nombreArchivo;
-            link.href = URL.createObjectURL(blob);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            resolve();
-          }, 'image/png');
-        };
-        chartImage.src = chartInstance.toBase64Image();
-      } else {
-        resolve();
-      }
-    });
+    } catch (err) {
+      alert("❌ Error al procesar el PDF: " + err.message);
+    } finally {
+      btnPdf.disabled = false;
+      btnPdf.innerText = "📄 Generar y Descargar Reporte PDF";
+    }
   }
 
   async function enviarFormulario(e) {
@@ -1079,14 +1019,11 @@
       obtenerUbicacionGPS();
     }
 
-    // 1. Generar planilla en imagen sin bloquear la ejecución
-    await descargarImagenCompleta(payload);
-
-    // 2. MODO OFFLINE
+    // 1. MODO OFFLINE
     if (!navigator.onLine) {
       try {
         await guardarLocalmente(payload);
-        alert("📲 Planilla en imagen descargada y datos guardados localmente.");
+        alert("📲 Datos guardados localmente.");
         limpiarFormularioExito();
       } catch (err) {
         alert("❌ Error guardando en el dispositivo: " + err);
@@ -1097,7 +1034,7 @@
       return;
     }
 
-    // 3. MODO ONLINE
+    // 2. MODO ONLINE
     try {
       const response = await fetch(SCRIPT_URL, {
         method: "POST",
@@ -1106,14 +1043,14 @@
       const res = await response.json();
 
       if (res.status === "success") {
-        alert("✅ Mediciones registradas en la hoja e imagen guardada: " + res.sheet);
+        alert("✅ Mediciones registradas en la hoja: " + res.sheet);
         limpiarFormularioExito();
       } else {
         alert("Error: " + res.message);
       }
     } catch (err) {
       await guardarLocalmente(payload);
-      alert("⚠️ Red inestable: La imagen se descargó y los datos se guardaron localmente.");
+      alert("⚠️ Red inestable: Los datos se guardaron localmente para sincronizar luego.");
       limpiarFormularioExito();
     } finally {
       btnGuardar.disabled = false;
