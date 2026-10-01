@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfilado de Cadenas de Aisladores 2.5.9</title>
+  <title>Perfilado de Cadenas de Aisladores 2.5.10</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -275,7 +275,7 @@
 
 <div class="container">
   <div id="offline-status" class="offline-badge">⚠️ Modo Offline (Sin conexión)</div>
-  <h2>Perfilado de Cadenas de Aisladores 2.5.9</h2>
+  <h2>Perfilado de Cadenas de Aisladores 2.5.10</h2>
   
   <form id="form-perfilado">
     <div class="section-title">1. Datos de Cabecera</div>
@@ -1040,8 +1040,8 @@
   }
 
   /**
-   * Función optimizada para compartir directamente el archivo PDF
-   * sin generar enlaces de texto tipo blob:http... en WhatsApp
+   * Función corregida para celulares: Maneja adecuadamente los permisos del Web Share API 
+   * y hace un fallback automático a descarga limpia por enlace si la API es bloqueada.
    */
   async function descargarPDFLinea(nombreLinea, btnElement) {
     if (!navigator.onLine) {
@@ -1059,30 +1059,41 @@
 
       if (data.status === "success" && data.pdfBase64) {
         
-        // 1. Decodificar la cadena Base64 a arreglo de bytes
+        // 1. Convertir Base64 a Blob directo
         const byteCharacters = atob(data.pdfBase64);
         const byteNumbers = new Array(byteCharacters.length);
-        
         for (let i = 0; i < byteCharacters.length; i++) {
           byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
-        
         const byteArray = new Uint8Array(byteNumbers);
+        const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
         const nombreArchivo = `Reporte_${nombreLinea.replace(/\s+/g, '_')}.pdf`;
-        
-        // 2. Crear un objeto File directamente
-        const file = new File([byteArray], nombreArchivo, { type: 'application/pdf' });
 
-        // 3. Si el dispositivo soporta Web Share API para archivos, lo comparte sin texto ni URL
+        // 2. Crear objeto File
+        const file = new File([pdfBlob], nombreArchivo, { type: 'application/pdf' });
+
+        let compartido = false;
+
+        // Intentar compartir con Web Share API
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file] // Se omite url y text para evitar el blob de texto en WhatsApp
-          });
-        } else {
-          // Fallback para navegadores que no soportan Web Share
-          const blob = new Blob([byteArray], { type: 'application/pdf' });
-          const fileURL = URL.createObjectURL(blob);
+          try {
+            await navigator.share({
+              files: [file]
+            });
+            compartido = true;
+          } catch (shareErr) {
+            // Si el usuario cancela la acción, no hacemos nada
+            if (shareErr.name === "AbortError") {
+              compartido = true; 
+            } else {
+              console.warn("Web Share API bloqueada o falló, recurriendo a descarga tradicional:", shareErr);
+            }
+          }
+        }
 
+        // 3. Fallback: Si no se pudo compartir (por restricciones del móvil), forzar la descarga directo al teléfono
+        if (!compartido) {
+          const fileURL = URL.createObjectURL(pdfBlob);
           const a = document.createElement('a');
           a.href = fileURL;
           a.download = nombreArchivo;
@@ -1098,10 +1109,8 @@
         alert("❌ Error al generar el PDF: " + (data.message || "Respuesta incompleta del servidor."));
       }
     } catch (err) {
-      if (err.name !== "AbortError") {
-        console.error(err);
-        alert("❌ Error al procesar el archivo PDF: " + err.message);
-      }
+      console.error(err);
+      alert("❌ Error al procesar el archivo PDF: " + err.message);
     } finally {
       btnElement.innerText = textoOriginal;
       btnElement.disabled = false;
