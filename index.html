@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfilado de Cadenas de Aisladores 2.5.12</title>
+  <title>Perfilado de Cadenas de Aisladores 2.5.13</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -275,7 +275,7 @@
 
 <div class="container">
   <div id="offline-status" class="offline-badge">⚠️ Modo Offline (Sin conexión)</div>
-  <h2>Perfilado de Cadenas de Aisladores 2.5.12</h2>
+  <h2>Perfilado de Cadenas de Aisladores 2.5.13</h2>
   
   <form id="form-perfilado">
     <div class="section-title">1. Datos de Cabecera</div>
@@ -1040,8 +1040,8 @@
   }
 
   /**
-   * Función para descarga limpia e inmediata en móviles.
-   * Evita abrir el visor web que adjunta la URL de GitHub en el menú compartir de iOS.
+   * Función compatible con iOS/Safari para forzar la descarga del PDF
+   * sin abrir la vista previa ni incluir enlaces de GitHub/blob al compartir.
    */
   async function descargarPDFLinea(nombreLinea, btnElement) {
     if (!navigator.onLine) {
@@ -1059,17 +1059,35 @@
 
       if (data.status === "success" && data.pdfBase64) {
         
-        // 1. Convertir Base64 a Data URL tipo octet-stream para forzar descarga sin abrir visor
+        // 1. Convertir la cadena Base64 a un Array de Bytes
+        const byteCharacters = atob(data.pdfBase64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        
+        // 2. Crear Blob PDF explícito
+        const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
         const nombreArchivo = `Reporte_${nombreLinea.replace(/\s+/g, '_')}.pdf`;
-        const dataUrl = "data:application/octet-stream;base64," + data.pdfBase64;
 
-        // 2. Crear enlace invisible para forzar la descarga en el dispositivo
+        // 3. Crear una URL de Blob temporal
+        const blobUrl = URL.createObjectURL(pdfBlob);
+
+        // 4. Crear el enlace de descarga simulado
         const a = document.createElement('a');
-        a.href = dataUrl;
+        a.href = blobUrl;
         a.download = nombreArchivo;
+        
+        // Requisito para iOS Safari: añadirlo al DOM antes del click
         document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
+        
+        // Limpieza diferida para darle tiempo al navegador a procesar la descarga
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(blobUrl);
+        }, 2000);
 
       } else {
         alert("❌ Error al generar el PDF: " + (data.message || "Respuesta incompleta del servidor."));
