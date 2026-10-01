@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfilado de Cadenas de Aisladores 2.5.10</title>
+  <title>Perfilado de Cadenas de Aisladores 2.5.11</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -275,7 +275,7 @@
 
 <div class="container">
   <div id="offline-status" class="offline-badge">⚠️ Modo Offline (Sin conexión)</div>
-  <h2>Perfilado de Cadenas de Aisladores 2.5.10</h2>
+  <h2>Perfilado de Cadenas de Aisladores 2.5.11</h2>
   
   <form id="form-perfilado">
     <div class="section-title">1. Datos de Cabecera</div>
@@ -1040,8 +1040,8 @@
   }
 
   /**
-   * Función corregida para celulares: Maneja adecuadamente los permisos del Web Share API 
-   * y hace un fallback automático a descarga limpia por enlace si la API es bloqueada.
+   * Función para descarga limpia e inmediata del PDF en el dispositivo.
+   * Evita enviar metadatos de URL o text que WhatsApp interpreta como blob:https://...
    */
   async function descargarPDFLinea(nombreLinea, btnElement) {
     if (!navigator.onLine) {
@@ -1059,7 +1059,7 @@
 
       if (data.status === "success" && data.pdfBase64) {
         
-        // 1. Convertir Base64 a Blob directo
+        // 1. Decodificar la cadena Base64
         const byteCharacters = atob(data.pdfBase64);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
@@ -1069,41 +1069,17 @@
         const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
         const nombreArchivo = `Reporte_${nombreLinea.replace(/\s+/g, '_')}.pdf`;
 
-        // 2. Crear objeto File
-        const file = new File([pdfBlob], nombreArchivo, { type: 'application/pdf' });
+        // 2. Forzar descarga directa al disco / memoria del celular
+        const fileURL = URL.createObjectURL(pdfBlob);
+        const a = document.createElement('a');
+        a.href = fileURL;
+        a.download = nombreArchivo;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
 
-        let compartido = false;
-
-        // Intentar compartir con Web Share API
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file]
-            });
-            compartido = true;
-          } catch (shareErr) {
-            // Si el usuario cancela la acción, no hacemos nada
-            if (shareErr.name === "AbortError") {
-              compartido = true; 
-            } else {
-              console.warn("Web Share API bloqueada o falló, recurriendo a descarga tradicional:", shareErr);
-            }
-          }
-        }
-
-        // 3. Fallback: Si no se pudo compartir (por restricciones del móvil), forzar la descarga directo al teléfono
-        if (!compartido) {
-          const fileURL = URL.createObjectURL(pdfBlob);
-          const a = document.createElement('a');
-          a.href = fileURL;
-          a.download = nombreArchivo;
-          a.target = '_blank';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-
-          setTimeout(() => URL.revokeObjectURL(fileURL), 15000);
-        }
+        // Limpiar memoria
+        setTimeout(() => URL.revokeObjectURL(fileURL), 5000);
 
       } else {
         alert("❌ Error al generar el PDF: " + (data.message || "Respuesta incompleta del servidor."));
