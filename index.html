@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfilado de Cadenas de Aisladores 2.5.11</title>
+  <title>Perfilado de Cadenas de Aisladores 2.5.12</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -275,7 +275,7 @@
 
 <div class="container">
   <div id="offline-status" class="offline-badge">⚠️ Modo Offline (Sin conexión)</div>
-  <h2>Perfilado de Cadenas de Aisladores 2.5.11</h2>
+  <h2>Perfilado de Cadenas de Aisladores 2.5.12</h2>
   
   <form id="form-perfilado">
     <div class="section-title">1. Datos de Cabecera</div>
@@ -1040,8 +1040,8 @@
   }
 
   /**
-   * Función para descarga limpia e inmediata del PDF en el dispositivo.
-   * Evita enviar metadatos de URL o text que WhatsApp interpreta como blob:https://...
+   * Función para descarga limpia e inmediata en móviles.
+   * Evita abrir el visor web que adjunta la URL de GitHub en el menú compartir de iOS.
    */
   async function descargarPDFLinea(nombreLinea, btnElement) {
     if (!navigator.onLine) {
@@ -1059,27 +1059,17 @@
 
       if (data.status === "success" && data.pdfBase64) {
         
-        // 1. Decodificar la cadena Base64
-        const byteCharacters = atob(data.pdfBase64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const pdfBlob = new Blob([byteArray], { type: 'application/pdf' });
+        // 1. Convertir Base64 a Data URL tipo octet-stream para forzar descarga sin abrir visor
         const nombreArchivo = `Reporte_${nombreLinea.replace(/\s+/g, '_')}.pdf`;
+        const dataUrl = "data:application/octet-stream;base64," + data.pdfBase64;
 
-        // 2. Forzar descarga directa al disco / memoria del celular
-        const fileURL = URL.createObjectURL(pdfBlob);
+        // 2. Crear enlace invisible para forzar la descarga en el dispositivo
         const a = document.createElement('a');
-        a.href = fileURL;
+        a.href = dataUrl;
         a.download = nombreArchivo;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-
-        // Limpiar memoria
-        setTimeout(() => URL.revokeObjectURL(fileURL), 5000);
 
       } else {
         alert("❌ Error al generar el PDF: " + (data.message || "Respuesta incompleta del servidor."));
@@ -1092,7 +1082,6 @@
       btnElement.disabled = false;
     }
   }
-
   async function enviarFormulario(e) {
     e.preventDefault();
 
